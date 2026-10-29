@@ -7,6 +7,7 @@
 用户可以是项目申报负责人、企业制度执行者、采购或服务条款核对人员等。界面和数据结构不绑定单一行业。
 
 首版用三个案例验证同一套流程：
+
 - 项目申报条件
 - 费用报销制度
 - 设备保修或服务条款
@@ -24,6 +25,7 @@
 ## 技术架构
 
 ### 前端
+
 - **框架**：Next.js + React + TypeScript
 - **UI**：Tailwind CSS + shadcn/ui
 - **AI 交互**：assistant-ui (自定义 Runtime/Adapter)
@@ -31,6 +33,7 @@
 - **布局**：三栏工作台（文件列表 | 对话与清单 | 文档阅读器）
 
 ### 后端
+
 - **API**：FastAPI (Python)
 - **文档解析**：pdfplumber (抽取文本与坐标)
 - **检索**：Chroma (向量) + BM25 (关键词)
@@ -48,18 +51,21 @@
 ### 安装步骤
 
 1. 克隆仓库
+
 ```bash
 git clone <repository-url>
 cd evidence-desk
 ```
 
 2. 配置环境变量
+
 ```bash
 cp .env.example .env
 # 编辑 .env 填写必要的 API 密钥
 ```
 
 3. 启动后端
+
 ```bash
 cd backend
 python -m venv venv
@@ -69,6 +75,7 @@ python main.py
 ```
 
 4. 启动前端
+
 ```bash
 cd frontend
 npm install
@@ -80,11 +87,13 @@ npm run dev
 ### 开发样例
 
 开发样例位于 `data/examples/` 目录：
+
 - `project-application/`：项目申报条件
 - `expense-reimbursement/`：费用报销制度
 - `warranty-service/`：设备保修或服务条款
 
 每个样例包含：
+
 - 文档文件（PDF/TXT）
 - 来源说明（source.md）
 - 开发测试问题（dev-questions.md）
@@ -92,11 +101,12 @@ npm run dev
 
 ## 项目状态
 
-**当前版本**：v0.1.0-dev (Day 1)
+**当前版本**：v0.1.0-dev (Day 2)
 
 **完成进度**：
-- [x] Day 1: 项目初始化与范围定义
-- [ ] Day 2: 三栏工作台与流式对话
+
+- [X] Day 1: 项目初始化与范围定义
+- [X] Day 2: 三栏工作台与流式对话
 - [ ] Day 3: 文档导入与解析
 - [ ] Day 4: 精确高亮定位
 - [ ] Day 5: 检索链路
@@ -114,6 +124,7 @@ npm run dev
 ## 技术文档
 
 详细设计文档位于 `docs/` 目录：
+
 - [产品范围](docs/product-scope.md)
 - [系统架构](docs/architecture.md)
 - [数据模型](docs/data-model.md)
@@ -123,6 +134,7 @@ npm run dev
 ## 限制与约束
 
 **首版限制**：
+
 - 每个资料空间最多 10 个文件
 - 单个 PDF 最多 30 页、10 MB
 - 仅支持带文字层的 PDF、TXT、Markdown
@@ -137,6 +149,7 @@ npm run dev
 ## 许可说明
 
 本项目使用的第三方组件：
+
 - assistant-ui: Apache-2.0 License
 - PDF.js: Apache-2.0 License
 - shadcn/ui: MIT License
