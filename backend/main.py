@@ -10,7 +10,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
 import os
+import sys
 from dotenv import load_dotenv
+
+# Windows 控制台默认编码为 GBK，日志中的 emoji 会触发 UnicodeEncodeError
+# 导致应用启动失败。只放宽错误处理，保留控制台原有编码，避免中文日志乱码。
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(errors="replace")
 
 # 加载环境变量
 load_dotenv()
@@ -81,11 +88,14 @@ async def root():
     }
 
 
-# TODO Day 2: 添加路由导入和注册
-# from api.routes import workspace, document, chat, evidence, export
+from api.routes import chat  # noqa: E402
+
+app.include_router(chat.router, prefix="/api/chat", tags=["对话"])
+
+# TODO Day 3+: 添加剩余路由导入和注册
+# from api.routes import workspace, document, evidence, export
 # app.include_router(workspace.router, prefix="/api/workspaces", tags=["资料空间"])
 # app.include_router(document.router, prefix="/api/documents", tags=["文档"])
-# app.include_router(chat.router, prefix="/api/chat", tags=["对话"])
 # app.include_router(evidence.router, prefix="/api/evidence", tags=["证据"])
 # app.include_router(export.router, prefix="/api/export", tags=["导出"])
 

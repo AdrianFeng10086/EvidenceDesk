@@ -3,9 +3,7 @@ import type { Config } from "tailwindcss";
 const config: Config = {
   darkMode: ["class"],
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -42,6 +40,24 @@ const config: Config = {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        // EvidenceDesk brand colors
+        navy: {
+          DEFAULT: "#0B0E14",
+          50: "#F8FAFC",
+          900: "#0B0E14",
+        },
+        sky: {
+          DEFAULT: "#38BDF8",
+          400: "#38BDF8",
+        },
+        teal: {
+          DEFAULT: "#4FD1C5",
+          400: "#4FD1C5",
+        },
+        amber: {
+          DEFAULT: "#F59E0B",
+          500: "#F59E0B",
         },
       },
       borderRadius: {

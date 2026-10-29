@@ -4,25 +4,26 @@
 
 @layer base {
   :root {
-    --background: 210 15% 5%;
-    --foreground: 210 8% 97%;
-    --card: 212 14% 8%;
-    --card-foreground: 210 8% 97%;
-    --popover: 212 14% 8%;
-    --popover-foreground: 210 8% 97%;
-    --primary: 199 89% 60%;
-    --primary-foreground: 210 18% 8%;
-    --secondary: 212 12% 15%;
-    --secondary-foreground: 210 8% 97%;
-    --muted: 212 12% 15%;
-    --muted-foreground: 210 8% 70%;
-    --accent: 212 12% 18%;
-    --accent-foreground: 210 8% 97%;
-    --destructive: 0 62% 50%;
-    --destructive-foreground: 210 8% 97%;
-    --border: 212 12% 18%;
-    --input: 212 12% 18%;
-    --ring: 199 89% 60%;
+    color-scheme: light;
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 201 96% 39%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 201 96% 39%;
     --radius: 1rem;
   }
 }
@@ -31,7 +32,61 @@
   * {
     @apply border-border;
   }
+
+  html,
   body {
-    @apply bg-background text-foreground;
+    @apply h-full;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  ::selection {
+    @apply bg-sky-200/60 text-slate-900;
+  }
+
+  /* 浅色主题滚动条 */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-slate-300;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400;
+  }
+}
+
+@layer utilities {
+  /* Radix Accordion 折叠动画高度变量 */
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
   }
 }
