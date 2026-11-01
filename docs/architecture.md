@@ -722,8 +722,17 @@ MAX_CONCURRENT_RUNS_PER_USER = 2
 - ENCRYPTED: 加密文件，无法解析
 - CORRUPTED: 文件损坏
 - NO_TEXT_LAYER: 无文字层，需 OCR（首版不支持）
+- EMPTY_DOCUMENT: 文件/页面没有可抽取的文字
 - TOO_LARGE: 超过大小限制
+- TOO_MANY_PAGES: 超过 PDF 页数限制
 - UNSUPPORTED_FORMAT: 不支持的格式
+- UNSUPPORTED_ENCODING: 文本编码无法识别或疑似二进制
+- INTERRUPTED: 服务重启导致解析中断，可重试
+
+# 解析支持级别（写在 DocumentVersion.support_level）
+- full: 原文、段落与文字框可可靠映射
+- restricted: 多栏/表格/旋转文本/坐标覆盖不足，保留原文但需人工核对
+- unsupported: 解析失败，无可用原文
 
 # 引用错误
 - EVIDENCE_NOT_FOUND: 引用 ID 不存在

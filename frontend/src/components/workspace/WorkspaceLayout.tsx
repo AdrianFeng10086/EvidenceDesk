@@ -28,6 +28,13 @@ const TABS: { key: PanelKey; label: string; icon: LucideIcon }[] = [
  */
 export function WorkspaceLayout({ workspaceId }: WorkspaceLayoutProps) {
   const [activePanel, setActivePanel] = useState<PanelKey>('chat');
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
+
+  const handleSelectVersion = (versionId: string) => {
+    setSelectedVersionId(versionId);
+    // 移动端选择文档后直接切到阅读面板；桌面端三栏同时可见，不影响其他面板
+    setActivePanel('docs');
+  };
 
   return (
     <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-white md:h-screen md:flex-row">
@@ -63,17 +70,21 @@ export function WorkspaceLayout({ workspaceId }: WorkspaceLayoutProps) {
       {/* Left Panel: File List */}
       <aside
         className={cn(
-          'min-h-0 w-full flex-col border-slate-200 bg-slate-50 md:flex md:w-64 md:flex-none md:border-r',
+          'min-h-0 w-full flex-col border-slate-200 bg-slate-50 md:flex md:w-60 md:flex-none md:border-r lg:w-64 xl:w-72',
           activePanel === 'files' ? 'flex flex-1' : 'hidden'
         )}
       >
-        <FileList workspaceId={workspaceId} />
+        <FileList
+          workspaceId={workspaceId}
+          selectedVersionId={selectedVersionId}
+          onSelectVersion={handleSelectVersion}
+        />
       </aside>
 
       {/* Middle Panel: Chat & Checklist */}
       <main
         className={cn(
-          'min-h-0 w-full flex-col bg-white md:flex md:flex-1',
+          'min-h-0 min-w-0 w-full flex-col bg-white md:flex md:flex-1',
           activePanel === 'chat' ? 'flex flex-1' : 'hidden'
         )}
       >
@@ -84,11 +95,15 @@ export function WorkspaceLayout({ workspaceId }: WorkspaceLayoutProps) {
       {/* Right Panel: Document Viewer */}
       <aside
         className={cn(
-          'min-h-0 w-full flex-col border-slate-200 bg-slate-50 md:flex md:w-[480px] md:flex-none md:border-l',
+          'min-h-0 w-full flex-col border-slate-200 bg-slate-50 md:flex md:w-[380px] md:flex-none md:border-l lg:w-[460px] xl:w-[560px] 2xl:w-[640px]',
           activePanel === 'docs' ? 'flex flex-1' : 'hidden'
         )}
       >
-        <DocumentViewer workspaceId={workspaceId} />
+        <DocumentViewer
+          workspaceId={workspaceId}
+          versionId={selectedVersionId}
+          onSelectVersion={handleSelectVersion}
+        />
       </aside>
     </div>
   );

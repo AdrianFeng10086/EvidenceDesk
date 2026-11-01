@@ -16,10 +16,13 @@ import time
 import uuid
 from typing import Any, AsyncIterator, Dict, List
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
+from core.database import get_db
+from services.access import Principal, get_principal, require_workspace_access
 from services.llm import default_params, get_async_llm_client, llm_model
 
 router = APIRouter()
@@ -187,7 +190,15 @@ async def _stream_chat(req: ChatStreamRequest, request: Request) -> AsyncIterato
 
 
 @router.post("/stream")
-async def chat_stream(req: ChatStreamRequest, request: Request) -> StreamingResponse:
+async def chat_stream(
+    req: ChatStreamRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(get_principal),
+) -> StreamingResponse:
+    # 所有权校验入口：即使首版只有演示账户，也不允许跨资料空间提问
+    require_workspace_access(db, req.workspace_id, principal)
+
     return StreamingResponse(
         _stream_chat(req, request),
         media_type="text/event-stream",

@@ -12,10 +12,13 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const demoUser = req.headers.get('x-demo-user');
+  if (demoUser) headers['X-Demo-User'] = demoUser;
 
   const backendResponse = await fetch(`${BACKEND_URL}/api/chat/stream`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body,
     signal: req.signal,
   });

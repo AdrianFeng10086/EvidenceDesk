@@ -7,6 +7,7 @@ import {
   ContentPartPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
+  useContentPartText,
   useLocalRuntime,
   useMessage,
   useMessageRuntime,
@@ -23,6 +24,7 @@ import {
   Square,
 } from 'lucide-react';
 
+import { MarkdownContent } from '@/components/markdown/MarkdownContent';
 import { createEvidenceDeskAdapter } from '@/lib/chat-adapter';
 import { cn } from '@/lib/utils';
 import { EvidenceCard } from './EvidenceCard';
@@ -77,7 +79,7 @@ function ThreadView({ workspaceId }: ChatPanelProps) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* Header */}
-      <header className="flex flex-shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-4">
+      <header className="flex flex-shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 py-4 sm:px-6">
         <div>
           <h1 className="text-lg font-medium text-slate-900">有据工作台</h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -91,8 +93,8 @@ function ThreadView({ workspaceId }: ChatPanelProps) {
         <EmptyState workspaceId={workspaceId} onPick={handleSuggestion} />
       ) : (
         <ThreadPrimitive.Root className="min-h-0 flex-1">
-          <ThreadPrimitive.Viewport className="h-full overflow-y-auto px-6 py-6">
-            <div className="mx-auto flex max-w-3xl flex-col gap-6">
+          <ThreadPrimitive.Viewport className="h-full overflow-y-auto px-4 py-6 sm:px-6">
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 2xl:max-w-4xl">
               <ThreadPrimitive.Messages
                 components={{
                   UserMessage,
@@ -249,22 +251,26 @@ function RetryButton({ onRetry }: { onRetry: () => void }) {
 }
 
 function AssistantText() {
+  const { text, status } = useContentPartText();
+
   return (
-    <p className="whitespace-pre-wrap">
-      <ContentPartPrimitive.Text />
-      <ContentPartPrimitive.InProgress>
+    <div className="min-w-0">
+      <MarkdownContent content={text} />
+      {status.type === 'running' && (
         <span className="ml-0.5 inline-block h-3.5 w-1.5 translate-y-0.5 animate-pulse rounded-sm bg-sky-500" />
-      </ContentPartPrimitive.InProgress>
-    </p>
+      )}
+    </div>
   );
 }
 
 function ComposerBar({ isRunning }: { isRunning: boolean }) {
   return (
-    <div className="flex-shrink-0 border-t border-slate-200 bg-white p-4">
-      <ComposerPrimitive.Root className="mx-auto flex max-w-3xl items-end gap-2">
+    <div className="flex-shrink-0 border-t border-slate-200 bg-white px-3 py-3 sm:px-6 sm:py-4">
+      <ComposerPrimitive.Root className="mx-auto flex w-full max-w-3xl items-end gap-2 2xl:max-w-4xl">
         <ComposerPrimitive.Input
           rows={1}
+          minRows={1}
+          maxRows={8}
           submitOnEnter
           cancelOnEscape
           placeholder={
@@ -272,14 +278,14 @@ function ComposerBar({ isRunning }: { isRunning: boolean }) {
               ? '正在生成，可点击右侧按钮停止…'
               : '输入您的问题…（Enter 发送，Shift+Enter 换行）'
           }
-          className="max-h-[200px] min-h-[48px] flex-1 resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-100"
+          className="max-h-[40vh] min-h-[48px] w-full flex-1 resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-100"
         />
 
         {isRunning ? (
           <ComposerPrimitive.Cancel
             title="停止生成"
             aria-label="停止生成"
-            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-4 py-3 text-slate-700 transition-colors hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex flex-shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-4 py-3 text-slate-700 transition-colors hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Square className="h-4 w-4 fill-current" />
           </ComposerPrimitive.Cancel>
@@ -288,7 +294,7 @@ function ComposerBar({ isRunning }: { isRunning: boolean }) {
             title="发送"
             aria-label="发送"
             className={cn(
-              'flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-3 text-white transition-colors',
+              'flex flex-shrink-0 items-center gap-2 rounded-xl bg-sky-600 px-4 py-3 text-white transition-colors',
               'hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300',
               'disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400'
             )}

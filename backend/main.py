@@ -2,15 +2,19 @@
 有据工作台后端 - FastAPI 应用入口
 
 Day 1: 基础结构和健康检查
+Day 2: 流式对话
+Day 3: 文档导入、不可变版本、解析状态与 EvidenceSpan
 """
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+import os
+import sys
+
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
-import os
-import sys
 from dotenv import load_dotenv
 
 # Windows 控制台默认编码为 GBK，日志中的 emoji 会触发 UnicodeEncodeError
@@ -22,32 +26,34 @@ for _stream in (sys.stdout, sys.stderr):
 # 加载环境变量
 load_dotenv()
 
-# 应用元数据
-APP_NAME = "有据工作台后端"
-APP_VERSION = "0.1.0"
+from core.config import get_settings  # noqa: E402
+from core.database import init_db, recover_interrupted_parses  # noqa: E402
+from services.errors import AppError  # noqa: E402
+
+settings = get_settings()
+
+APP_NAME = settings.app_name
+APP_VERSION = settings.app_version
 APP_DESCRIPTION = "文档证据校验与检索增强生成工作台"
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期事件"""
-    # 启动
     print(f"🚀 启动 {APP_NAME} v{APP_VERSION}")
-    print(f"📁 上传目录: {os.getenv('UPLOAD_DIR', './data/uploads')}")
-    print(f"💾 数据库: {os.getenv('DATABASE_URL', 'sqlite:///./data/db/evidence.db')}")
+    print(f"📁 上传目录: {settings.upload_dir}")
+    print(f"💾 数据库: {settings.database_url}")
 
-    # TODO Day 2: 初始化数据库
-    # TODO Day 2: 初始化 Chroma 客户端
-    # TODO Day 2: 验证 LLM/向量模型连通性
+    init_db()
+    interrupted = recover_interrupted_parses()
+    if interrupted:
+        print(f"⚠️  {len(interrupted)} 个解析任务因上次退出而中断，已标记为失败")
 
     yield
 
-    # 关闭
     print(f"👋 关闭 {APP_NAME}")
-    # TODO: 清理连接
 
 
-# 创建 FastAPI 应用
 app = FastAPI(
     title=APP_NAME,
     version=APP_VERSION,
@@ -55,18 +61,45 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# 配置 CORS
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# 健康检查端点
+@app.exception_handler(AppError)
+async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": {
+                "code": exc.code,
+                "message": exc.message,
+                "details": exc.details,
+            }
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "请求参数不合法",
+                "details": {"errors": exc.errors()},
+            }
+        },
+    )
+
+
 @app.get("/health")
 async def health_check():
     """基础健康检查"""
@@ -88,16 +121,11 @@ async def root():
     }
 
 
-from api.routes import chat  # noqa: E402
+from api.routes import chat, documents, workspaces  # noqa: E402
 
+app.include_router(workspaces.router, prefix="/api", tags=["资料空间"])
+app.include_router(documents.router, prefix="/api", tags=["文档"])
 app.include_router(chat.router, prefix="/api/chat", tags=["对话"])
-
-# TODO Day 3+: 添加剩余路由导入和注册
-# from api.routes import workspace, document, evidence, export
-# app.include_router(workspace.router, prefix="/api/workspaces", tags=["资料空间"])
-# app.include_router(document.router, prefix="/api/documents", tags=["文档"])
-# app.include_router(evidence.router, prefix="/api/evidence", tags=["证据"])
-# app.include_router(export.router, prefix="/api/export", tags=["导出"])
 
 
 if __name__ == "__main__":

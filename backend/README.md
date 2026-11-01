@@ -38,34 +38,43 @@ python main.py
 
 ```
 backend/
-├── main.py                 # FastAPI 应用入口
-├── requirements.txt        # Python 依赖
+├── main.py                    # FastAPI 应用入口、错误处理、路由注册
+├── requirements.txt
 ├── core/
-│   ├── config.py          # 配置管理
-│   ├── database.py        # 数据库连接
-│   └── models.py          # Pydantic 模型
+│   ├── config.py              # 环境变量与路径解析
+│   └── database.py            # SQLite 连接、建表、演示空间、中断恢复
 ├── api/
-│   ├── routes/
-│   │   ├── workspace.py   # 工作空间端点
-│   │   ├── document.py    # 文档上传/解析
-│   │   ├── chat.py        # 聊天/运行端点 (SSE)
-│   │   ├── evidence.py    # 证据检索
-│   │   └── export.py      # 报告导出
-│   └── dependencies.py    # 共享依赖
+│   ├── serializers.py         # ORM -> API 模型
+│   └── routes/
+│       ├── workspaces.py      # 资料空间与所有权
+│       ├── documents.py       # 上传、版本、状态、原文、下载、重试
+│       └── chat.py            # 聊天/运行端点 (SSE)
 ├── services/
-│   ├── parser.py          # 文档解析 (pdfplumber)
-│   ├── retrieval.py       # 向量 + 关键词搜索
-│   ├── llm.py             # LLM 客户端封装
-│   ├── workflow.py        # AI 工作流编排器
-│   └── citation.py        # 引用验证
+│   ├── access.py              # 访问主体与所有权校验
+│   ├── storage.py             # 暂存、哈希、不可变版本目录
+│   ├── parser.py              # PDF/TXT/Markdown 解析与状态机
+│   ├── errors.py              # 业务错误与解析错误码
+│   ├── llm.py                 # LLM 客户端封装
+│   └── embedding.py           # 向量化客户端
 ├── db/
-│   ├── models.py          # SQLAlchemy 模型
-│   └── crud.py            # 数据库操作
-└── tests/
-    ├── test_parser.py
-    ├── test_retrieval.py
-    └── test_citation.py
+│   └── models.py              # Workspace/Document/Version/Page/Span/ParseJob
+├── schemas/
+│   └── document.py            # API 响应模型
+└── tests/                     # 25 个 pytest 用例与 PDF 生成器
 ```
+
+## 主要接口
+
+- `GET /api/workspaces`、`POST /api/workspaces`
+- `GET|POST /api/workspaces/{id}/documents`
+- `GET /api/documents/{version_id}`（详情/页面摘要/解析任务）
+- `GET /api/documents/{version_id}/status`（状态轮询）
+- `GET /api/documents/{version_id}/content?page=1`（原文 + EvidenceSpan + 文字框）
+- `GET /api/documents/{version_id}/original`（下载原文，附 SHA-256 头）
+- `POST /api/documents/{version_id}/parse/retry`（失败重试）
+- `POST /api/chat/stream`（SSE，同样校验资料空间所有权）
+
+完整说明见 `../docs/day3-implementation.md`。
 
 ## 开发
 

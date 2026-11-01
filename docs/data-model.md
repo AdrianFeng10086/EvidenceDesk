@@ -1,12 +1,21 @@
 # 数据模型详细设计
 
+> **Day 3 实现补充**：为了区分“同名文件的不同内容版本”，实现中在
+> `Workspace` 与 `DocumentVersion` 之间增加了逻辑实体 `Document`
+> （按规范化文件名去重）。`DocumentVersion` 新增 `parse_error_code`、
+> `support_level`、`warnings`、`page_count`、`char_count`，并新增
+> `DocumentPage`（页面原文）与 `ParseJob`（解析任务状态）。
+> 详细说明见 [Day 3 实现说明](day3-implementation.md)。
+
 ## 一、模型层级关系
 
 ```
 Workspace (资料空间)
-  ├── DocumentVersion (文档版本)
-  │     └── EvidenceSpan (文本证据片段)
-  │     └── VisualEvidence (视觉证据)
+  ├── Document (逻辑文档，按文件名去重)
+  │     └── DocumentVersion (不可变内容版本)
+  │           ├── DocumentPage (页面原文，字符偏移基准)
+  │           ├── EvidenceSpan (文本证据片段)
+  │           └── ParseJob (解析任务与错误)
   ├── Fact (用户事实)
   ├── CheckItem (核对清单项)
   └── Run (执行记录)
