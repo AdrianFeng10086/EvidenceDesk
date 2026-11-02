@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from core.config import get_settings
 from db.models import Document, DocumentVersion, Workspace
 from services.errors import ForbiddenError, NotFoundError
+from services.storage import original_file_exists
 
 
 @dataclass(frozen=True)
@@ -94,6 +95,14 @@ def require_version_access(
     version = db.get(DocumentVersion, version_id)
     if version is None:
         raise NotFoundError("文档版本不存在", details={"version_id": version_id})
+    if not original_file_exists(version.file_path):
+        # 原始文件被删除后，数据库里的版本与证据片段不再可用，
+        # 统一按“文档已不存在”处理，避免前端继续指向已被删除的文档。
+        raise NotFoundError(
+            "原始文件已丢失，文档可能已被删除",
+            code="ORIGINAL_FILE_MISSING",
+            details={"version_id": version_id},
+        )
     document = db.get(Document, version.document_id)
     if document is None:
         raise NotFoundError("文档不存在", details={"document_id": version.document_id})

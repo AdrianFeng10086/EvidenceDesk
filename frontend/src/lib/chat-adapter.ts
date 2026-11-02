@@ -10,7 +10,7 @@ import type {
 export type EvidenceToolArgs = { query: string };
 export type EvidenceToolResult = {
   is_sample: boolean;
-  note?: string;
+  note?: string | null;
   evidence_spans: EvidenceSpanSample[];
   claim_text?: string;
 };

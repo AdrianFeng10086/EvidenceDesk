@@ -3,10 +3,9 @@
 
 Day 2 范围：
 - 真实模型文本流（text_delta）接入 DeepSeek（OpenAI 兼容接口）
-- 用明确标注的样例证据展示折叠证据卡（tool_started/tool_finished + claim_ready）
-  样例证据不是真实检索结果，search_evidence 工具调用与返回的证据片段 ID
-  均以 "sample_" 前缀标注，并在 claim 的 support_reason 中注明为演示数据。
-- 真实检索链路（Day 5）接入后，将替换 _run_sample_evidence_search。
+- search_evidence 工具调用返回资料空间中真实存在的 EvidenceSpan
+  （首版为确定性关键词召回，Day 5 会替换为向量 + BM25）
+- 证据片段带文档版本、页码、字符范围与文字框，前端据此跳转和高亮
 
 事件协议定义见 docs/architecture.md 「三、流式事件协议」。
 """
@@ -21,8 +20,9 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from core.database import get_db
+from core.database import SessionLocal, get_db
 from services.access import Principal, get_principal, require_workspace_access
+from services.evidence_search import search_workspace_evidence
 from services.llm import default_params, get_async_llm_client, llm_model
 
 router = APIRouter()
@@ -46,46 +46,37 @@ def _sse(event: str, data: Dict[str, Any]) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
-def _sample_evidence_for(query: str) -> Dict[str, Any]:
-    """返回明确标注的样例证据，不是真实检索结果。
+def _search_evidence(workspace_id: str, query: str) -> Dict[str, Any]:
+    """返回资料空间中真实存在的证据片段。
 
-    真实检索链路见 Day 5 计划（docs/architecture.md、services/retrieval.py 待实现）。
-    这里固定返回项目申报案例的样例片段，用于演示折叠证据卡的交互。
+    使用独立短会话，避免把长时间运行的 SSE 生成器绑定在请求级 Session 上。
     """
+    with SessionLocal() as db:
+        spans = search_workspace_evidence(db, workspace_id, query, limit=5)
+
     return {
         "tool_name": "search_evidence",
-        "arguments": {"query": query, "workspace_id": "sample"},
+        "arguments": {"query": query, "workspace_id": workspace_id},
         "result": {
-            "is_sample": True,
-            "note": "样例数据，非真实检索结果，用于演示折叠证据卡交互",
-            "evidence_spans": [
-                {
-                    "id": "sample_ev_001",
-                    "document_name": "科研项目申报指南2024.pdf（样例）",
-                    "page": 2,
-                    "text": "重点项目申请人须为副教授及以上职称。",
-                    "is_sample": True,
-                },
-                {
-                    "id": "sample_ev_002",
-                    "document_name": "科研项目申报指南2024.pdf（样例）",
-                    "page": 3,
-                    "text": "申报截止时间为2024年11月15日，逾期不予受理。",
-                    "is_sample": True,
-                },
-            ],
+            "is_sample": False,
+            "note": None if spans else "资料空间中没有匹配的已解析证据片段",
+            "evidence_spans": spans,
         },
     }
 
 
-def _sample_claim(evidence_result: Dict[str, Any]) -> Dict[str, Any]:
-    span_ids = [span["id"] for span in evidence_result["evidence_spans"]]
+def _evidence_claim(evidence_result: Dict[str, Any]) -> Dict[str, Any]:
+    spans = evidence_result["evidence_spans"]
+    if spans:
+        text = f"以上结论引用了 {len(spans)} 处原文证据片段，点击证据卡可定位到原文。"
+    else:
+        text = "本次没有检索到可引用的原文证据片段。"
     return {
-        "id": f"sample_claim_{uuid.uuid4().hex[:8]}",
-        "text": "以下为样例证据摘录，用于演示折叠来源卡交互，并非针对本次提问的真实检索结果。",
-        "evidence_span_ids": span_ids,
+        "id": f"claim_{uuid.uuid4().hex[:8]}",
+        "text": text,
+        "evidence_span_ids": [span["id"] for span in spans],
         "validation_status": "pending",
-        "is_sample": True,
+        "is_sample": False,
     }
 
 
@@ -131,8 +122,8 @@ async def _stream_chat(req: ChatStreamRequest, request: Request) -> AsyncIterato
         if await request.is_disconnected():
             return
 
-        # Day 2：真实检索链路尚未接入，用明确标注的样例证据展示折叠证据卡。
-        tool_call = _sample_evidence_for(last_user_message)
+        # 首版关键词召回：返回真实 EvidenceSpan（含版本、坐标与上下文）。
+        tool_call = _search_evidence(req.workspace_id, last_user_message)
         yield _sse(
             "tool_started",
             {
@@ -154,7 +145,7 @@ async def _stream_chat(req: ChatStreamRequest, request: Request) -> AsyncIterato
         )
         evidence_count = len(tool_call["result"]["evidence_spans"])
 
-        claim = _sample_claim(tool_call["result"])
+        claim = _evidence_claim(tool_call["result"])
         claims_count = 1
         yield _sse(
             "claim_ready",

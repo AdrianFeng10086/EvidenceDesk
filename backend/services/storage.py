@@ -184,6 +184,16 @@ def sha256_of_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def original_file_exists(file_path: Optional[str | Path]) -> bool:
+    """原始文件是否仍在受管存储中；缺失即视为文档已被删除。"""
+    if not file_path:
+        return False
+    try:
+        return Path(file_path).is_file()
+    except (OSError, ValueError):
+        return False
+
+
 def assert_managed_path(path: Path) -> Path:
     """下载前确认路径位于上传目录内。"""
     upload_root = get_settings().upload_dir.resolve()

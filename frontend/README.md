@@ -36,26 +36,25 @@ frontend/
 │   │   ├── workspace/
 │   │   │   ├── FileList.tsx          # 左侧面板：文件列表
 │   │   │   ├── ChatPanel.tsx         # 中间面板：对话与清单
-│   │   │   ├── DocumentViewer.tsx    # 右侧面板：PDF 阅读器
+│   │   │   ├── EvidenceCard.tsx      # 可折叠的证据来源与定位入口
+│   │   │   ├── DocumentViewer.tsx    # 右侧面板：PDF / 文本阅读器
 │   │   │   └── WorkspaceLayout.tsx   # 三栏布局
 │   │   ├── evidence/
-│   │   │   ├── EvidenceCard.tsx      # 可折叠的证据来源
-│   │   │   ├── HighlightOverlay.tsx  # 精确文本/视觉高亮
-│   │   │   └── DocumentReference.tsx # 页面级后备引用
+│   │   │   ├── PdfPageView.tsx       # PDF.js canvas 渲染
+│   │   │   ├── HighlightOverlay.tsx  # 红色实线证据矩形
+│   │   │   └── DocumentReference.tsx # assistant-ui 页级后备引用
 │   │   ├── checklist/
 │   │   │   ├── CheckItem.tsx
 │   │   │   └── ChecklistPanel.tsx
 │   │   └── ui/                       # shadcn/ui 组件
 │   ├── lib/
-│   │   ├── assistant/
-│   │   │   ├── runtime.ts            # 自定义 assistant-ui 运行时
-│   │   │   ├── adapter.ts            # 后端 SSE 适配器
-│   │   │   └── tool-ui.tsx           # 自定义工具 UI 组件
 │   │   ├── pdf/
-│   │   │   ├── viewer.ts             # PDF.js 集成
-│   │   │   └── coordinates.ts        # 坐标转换
-│   │   └── api/
-│   │       └── client.ts             # API 客户端
+│   │   │   └── coordinates.ts        # PDF 点 -> CSS 像素坐标转换
+│   │   ├── evidence/
+│   │   │   ├── location-status.ts    # 定位状态文案与配色
+│   │   │   └── text-range.ts         # 段落 / 行范围
+│   │   └── stores/
+│   │       └── evidence-locator.ts   # 证据定位状态（zustand）
 │   └── types/
 │       ├── workspace.ts
 │       ├── document.ts
@@ -81,8 +80,12 @@ frontend/
 
 运行测试：
 ```bash
-npm test
+# 坐标换算（75/100/150%、面板尺寸、旋转、镜像回归）与文本行范围
+npm run test:coordinates
 ```
+
+PDF.js worker 由 `scripts/copy-pdf-worker.mjs` 在 `postinstall`、`predev`、
+`prebuild` 时复制到 `public/pdf.worker.min.mjs`，不依赖 CDN。
 
 构建：
 ```bash

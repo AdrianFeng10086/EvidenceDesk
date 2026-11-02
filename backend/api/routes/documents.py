@@ -35,6 +35,8 @@ from db.models import Document, DocumentVersion, ParseJob, new_id, utcnow
 from schemas.document import (
     DocumentDetailOut,
     DocumentListOut,
+    EvidenceSearchOut,
+    EvidenceSpanRefOut,
     PageContentOut,
     RetryParseResponseOut,
     UploadResponseOut,
@@ -46,11 +48,13 @@ from services.access import (
     require_workspace_access,
 )
 from services.errors import ConflictError, NotFoundError
+from services.evidence_search import search_workspace_evidence
 from services.parser import run_parse_job
 from services.storage import (
     assert_managed_path,
     finalize_upload,
     normalize_name,
+    original_file_exists,
     remove_staged,
     sanitize_filename,
     stage_upload,
@@ -76,9 +80,47 @@ def list_documents(
         .where(Document.workspace_id == workspace.id)
         .order_by(Document.updated_at.desc())
     ).all()
+    # 原始文件已被删除的文档不再出现在列表中，避免留下无法打开的指向
+    visible = [doc for doc in documents if _document_original_exists(db, doc)]
     return DocumentListOut(
         workspace=workspace_out(db, workspace),
-        documents=[document_summary(db, doc) for doc in documents],
+        documents=[document_summary(db, doc) for doc in visible],
+    )
+
+
+def _document_original_exists(db: Session, document: Document) -> bool:
+    latest: Optional[DocumentVersion] = None
+    if document.latest_version_id:
+        latest = db.get(DocumentVersion, document.latest_version_id)
+    if latest is None:
+        latest = db.scalars(
+            select(DocumentVersion)
+            .where(DocumentVersion.document_id == document.id)
+            .order_by(DocumentVersion.version.desc())
+        ).first()
+    return latest is not None and original_file_exists(latest.file_path)
+
+
+@router.get(
+    "/workspaces/{workspace_id}/evidence/search",
+    response_model=EvidenceSearchOut,
+    tags=["证据"],
+)
+def search_evidence(
+    workspace_id: str,
+    q: str = Query(..., min_length=1, max_length=200, description="检索问题或关键词"),
+    limit: int = Query(5, ge=1, le=20),
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(get_principal),
+) -> EvidenceSearchOut:
+    """返回资料空间内真实存在的 EvidenceSpan，供证据卡定位使用。"""
+    workspace = require_workspace_access(db, workspace_id, principal)
+    spans = search_workspace_evidence(db, workspace.id, q, limit=limit)
+    return EvidenceSearchOut(
+        query=q,
+        is_sample=False,
+        note=None if spans else "资料空间中没有匹配的已解析证据片段",
+        evidence_spans=[EvidenceSpanRefOut(**span) for span in spans],
     )
 
 

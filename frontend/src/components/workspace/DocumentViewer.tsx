@@ -1,19 +1,21 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Crosshair,
   Download,
   FileText,
   Loader2,
-  Minus,
-  Plus,
   RefreshCw,
+  ScanText,
 } from 'lucide-react';
 
-import { MarkdownContent } from '@/components/markdown/MarkdownContent';
+import { PdfPageView } from '@/components/evidence/PdfPageView';
 import {
   ApiError,
   getDocument,
@@ -27,7 +29,24 @@ import {
   parseStatusInfo,
   supportLevelLabel,
 } from '@/lib/document-status';
-import type { DocumentDetail, EvidenceSpan, PageContent } from '@/lib/types/documents';
+import {
+  LOCATION_TONE_CLASSES,
+  describeLocationStatus,
+} from '@/lib/evidence/location-status';
+import { formatLineRange, lineRangeAt } from '@/lib/evidence/text-range';
+import { hasDrawableBboxes } from '@/lib/pdf/coordinates';
+import {
+  isTextFileName,
+  locateInputFromContentSpan,
+  useEvidenceLocator,
+  type EvidenceLocationStatus,
+  type EvidenceTarget,
+} from '@/lib/stores/evidence-locator';
+import type {
+  DocumentDetail,
+  EvidenceSpan,
+  PageContent,
+} from '@/lib/types/documents';
 import { cn } from '@/lib/utils';
 
 interface DocumentViewerProps {
@@ -46,6 +65,15 @@ const SPAN_KIND_LABELS: Record<string, string> = {
   quote: '引用',
 };
 
+const ZOOM_OPTIONS = [0.75, 1, 1.5] as const;
+type Zoom = (typeof ZOOM_OPTIONS)[number];
+
+interface PdfPageInfo {
+  rotation: number;
+  sourceWidth: number;
+  sourceHeight: number;
+}
+
 export function DocumentViewer({
   workspaceId,
   versionId,
@@ -58,10 +86,20 @@ export function DocumentViewer({
   const [contentError, setContentError] = useState<string | null>(null);
   const [loadingContent, setLoadingContent] = useState(false);
   const [page, setPage] = useState(1);
-  const [fontSize, setFontSize] = useState(14);
+  const [zoom, setZoom] = useState<Zoom>(1);
   const [selectedSpanId, setSelectedSpanId] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [pdfInfo, setPdfInfo] = useState<PdfPageInfo | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+
+  const evidenceTarget = useEvidenceLocator((state) => state.target);
+  const setLocationStatus = useEvidenceLocator((state) => state.setStatus);
+
+  const target =
+    evidenceTarget && evidenceTarget.documentVersionId === versionId
+      ? evidenceTarget
+      : null;
 
   // 拉取文档元数据；解析中/索引中时轮询直到终态
   useEffect(() => {
@@ -69,19 +107,22 @@ export function DocumentViewer({
       setDetail(null);
       setDetailError(null);
       setLoadingDetail(false);
+      setContent(null);
       return;
     }
 
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
-    setDetail((current) =>
-      current?.version.id === versionId ? current : null
-    );
+    setDetail((current) => (current?.version.id === versionId ? current : null));
     setDetailError(null);
     setLoadingDetail(true);
+    setContent(null);
+    setContentError(null);
     setPage(1);
     setSelectedSpanId(null);
+    setPdfInfo(null);
+    setPdfError(null);
 
     const fetchDetail = async () => {
       try {
@@ -108,7 +149,19 @@ export function DocumentViewer({
     };
   }, [versionId, refreshTick]);
 
-  // 解析成功后读取当前页原文与证据片段
+  // 证据跳转：等目标版本元数据就绪后再切页，避免落到旧文件
+  useEffect(() => {
+    if (!target) return;
+    if (!detail || detail.version.id !== target.documentVersionId) return;
+    setPage(Math.max(1, target.page));
+  }, [target, detail]);
+
+  useEffect(() => {
+    setPdfInfo(null);
+    setPdfError(null);
+  }, [versionId, page]);
+
+  // 读取当前页原文与证据片段（PDF 用于同页引用导航，TXT/MD 用于段落高亮）
   useEffect(() => {
     if (!detail || detail.version.parse_status !== 'success') {
       setContent(null);
@@ -152,6 +205,146 @@ export function DocumentViewer({
     }
   }, [versionId]);
 
+  const handlePdfMetrics = useCallback((metrics: PdfPageInfo) => {
+    setPdfInfo(metrics);
+    setPdfError(null);
+  }, []);
+
+  const handlePdfError = useCallback((message: string) => {
+    setPdfError(message);
+  }, []);
+
+  const version = detail?.version;
+  const isText = version ? isTextFileName(version.file_name) : false;
+  const isPdf = !!version && !isText && version.file_suffix.toLowerCase() === '.pdf';
+  const pageContent =
+    content && content.page_number === page && content.version_id === version?.id
+      ? content
+      : null;
+
+  const locationStatus = useMemo<EvidenceLocationStatus | null>(() => {
+    if (!target) return null;
+
+    if (detailError) {
+      return {
+        kind: 'failed',
+        message: detailError,
+        evidenceId: target.spanId ?? undefined,
+      };
+    }
+    if (!detail || detail.version.id !== target.documentVersionId) {
+      return { kind: 'loading', message: '正在打开证据所在文档…' };
+    }
+    if (detail.version.parse_status !== 'success') {
+      return {
+        kind: 'failed',
+        message: `文档尚未解析成功（${detail.version.parse_status}），暂时无法定位原文。`,
+        evidenceId: target.spanId ?? undefined,
+      };
+    }
+
+    if (isText) {
+      if (contentError) {
+        return {
+          kind: 'failed',
+          message: contentError,
+          evidenceId: target.spanId ?? undefined,
+        };
+      }
+      if (!pageContent) {
+        return { kind: 'loading', message: '正在读取纯文本原文…' };
+      }
+      if (!target.spanId) {
+        return {
+          kind: 'page',
+          page: target.page,
+          message: '纯文本没有 PDF 页码，已打开全文；请从证据卡点击具体段落。',
+        };
+      }
+
+      const index = pageContent.spans.findIndex((span) => span.id === target.spanId);
+      if (index < 0) {
+        return {
+          kind: 'failed',
+          message: '证据片段不存在于当前文档版本，可能已被重新解析。',
+          evidenceId: target.spanId,
+        };
+      }
+      const span = pageContent.spans[index];
+      const range = lineRangeAt(pageContent.text, span.char_start, span.char_end);
+      const exactText =
+        pageContent.text.slice(span.char_start, span.char_end) === span.text;
+      return {
+        kind: 'text',
+        page: target.page,
+        evidenceId: target.spanId,
+        message: `第 ${index + 1} 段 · ${formatLineRange(range)}${
+          exactText ? '' : ' · 字符范围与原文不一致，已按片段 ID 定位'
+        }`,
+      };
+    }
+
+    if (pdfError) {
+      return {
+        kind: 'failed',
+        message: pdfError,
+        evidenceId: target.spanId ?? undefined,
+      };
+    }
+    if (!pdfInfo || !(pdfInfo.sourceWidth > 0)) {
+      return { kind: 'loading', message: '正在加载 PDF 页面…' };
+    }
+    if (pdfInfo.rotation % 360 !== 0) {
+      return {
+        kind: 'page',
+        page: target.page,
+        evidenceId: target.spanId ?? undefined,
+        message: `第 ${target.page} 页旋转 ${pdfInfo.rotation}°，暂不支持精确高亮，已做页级定位。`,
+      };
+    }
+    if (!hasDrawableBboxes(target.bboxes)) {
+      return {
+        kind: 'page',
+        page: target.page,
+        evidenceId: target.spanId ?? undefined,
+        message:
+          target.source === 'document-reference'
+            ? `已按页定位到第 ${target.page} 页（页级兜底，不显示精确红框）。`
+            : `该证据没有可用文字框，已定位到第 ${target.page} 页。`,
+      };
+    }
+    if (detail.version.support_level === 'restricted') {
+      return {
+        kind: 'approximate',
+        page: target.page,
+        evidenceId: target.spanId ?? '',
+        message: `受限解析（多栏/表格）：红色实线已画出，但坐标可能不精确，请人工核对。`,
+      };
+    }
+    return {
+      kind: 'exact',
+      page: target.page,
+      evidenceId: target.spanId ?? '',
+      message: `第 ${target.page} 页 · 红色实线为证据范围（${target.bboxes.length} 个文字框）。`,
+    };
+  }, [
+    target,
+    detailError,
+    detail,
+    isText,
+    contentError,
+    pageContent,
+    pdfError,
+    pdfInfo,
+    setLocationStatus,
+  ]);
+
+  useEffect(() => {
+    if (locationStatus) {
+      setLocationStatus(locationStatus);
+    }
+  }, [locationStatus, setLocationStatus]);
+
   if (!versionId) {
     return (
       <div className="flex h-full flex-col">
@@ -159,9 +352,9 @@ export function DocumentViewer({
         <div className="flex flex-1 items-center justify-center px-6 text-center text-slate-500">
           <div>
             <FileText className="mx-auto mb-4 h-16 w-16 opacity-25" />
-            <p className="text-sm">从左侧选择一份文档</p>
+            <p className="text-sm">从左侧选择一份文档，或点击对话中的证据引用</p>
             <p className="mt-2 text-xs leading-relaxed text-slate-400">
-              解析成功后，这里会显示按页、段落和文字框抽取的原文。
+              PDF 会按文字框显示红色实线高亮；TXT/Markdown 按段落、行范围定位。
             </p>
           </div>
         </div>
@@ -192,18 +385,26 @@ export function DocumentViewer({
       ) : detail ? (
         <ViewerBody
           detail={detail}
-          content={content}
+          content={pageContent}
           contentError={contentError}
           loadingContent={loadingContent}
           page={page}
           setPage={setPage}
-          fontSize={fontSize}
-          setFontSize={setFontSize}
+          zoom={zoom}
+          setZoom={setZoom}
           selectedSpanId={selectedSpanId}
           setSelectedSpanId={setSelectedSpanId}
           retrying={retrying}
           onRetry={handleRetry}
           workspaceId={workspaceId}
+          target={target}
+          locationStatus={locationStatus}
+          isText={isText}
+          isPdf={isPdf}
+          pdfInfo={pdfInfo}
+          pdfError={pdfError}
+          onPdfMetrics={handlePdfMetrics}
+          onPdfError={handlePdfError}
         />
       ) : (
         <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
@@ -240,7 +441,9 @@ function ViewerHeader({
               <p className="truncate text-[11px] text-slate-500">
                 {formatFileSize(version.file_size)} ·{' '}
                 {supportLevelLabel(version.support_level)}
-                {version.page_count ? ` · ${version.page_count} 页` : ''}
+                {version.page_count && !isTextFileName(version.file_name)
+                  ? ` · ${version.page_count} 页`
+                  : ' · 纯文本'}
               </p>
             )}
           </div>
@@ -295,13 +498,21 @@ function ViewerBody({
   loadingContent,
   page,
   setPage,
-  fontSize,
-  setFontSize,
+  zoom,
+  setZoom,
   selectedSpanId,
   setSelectedSpanId,
   retrying,
   onRetry,
   workspaceId,
+  target,
+  locationStatus,
+  isText,
+  isPdf,
+  pdfInfo,
+  pdfError,
+  onPdfMetrics,
+  onPdfError,
 }: {
   detail: DocumentDetail;
   content: PageContent | null;
@@ -309,15 +520,24 @@ function ViewerBody({
   loadingContent: boolean;
   page: number;
   setPage: (page: number) => void;
-  fontSize: number;
-  setFontSize: (updater: (size: number) => number) => void;
+  zoom: Zoom;
+  setZoom: (zoom: Zoom) => void;
   selectedSpanId: string | null;
   setSelectedSpanId: (id: string | null) => void;
   retrying: boolean;
   onRetry: () => void;
   workspaceId: string;
+  target: EvidenceTarget | null;
+  locationStatus: EvidenceLocationStatus | null;
+  isText: boolean;
+  isPdf: boolean;
+  pdfInfo: PdfPageInfo | null;
+  pdfError: string | null;
+  onPdfMetrics: (metrics: PdfPageInfo) => void;
+  onPdfError: (message: string) => void;
 }) {
   const version = detail.version;
+  const locate = useEvidenceLocator((state) => state.locate);
 
   if (version.parse_status === 'failed') {
     return (
@@ -377,16 +597,43 @@ function ViewerBody({
     );
   }
 
-  const isMarkdown = /\.(md|markdown)$/i.test(version.file_name);
   const pageCount = version.page_count ?? 1;
-  const restrictedWarnings = detail.version.warnings.filter(
+  const restrictedWarnings = version.warnings.filter(
     (warning) => warning.code !== 'ENCODING_FALLBACK' && warning.code !== 'LONG_BLOCK_SPLIT'
   );
+
+  const pageEvidenceSpans =
+    (content?.spans ?? []).filter((span) => span.bboxes.length > 0);
+  const activeEvidenceIndex = target?.spanId
+    ? pageEvidenceSpans.findIndex((span) => span.id === target.spanId)
+    : -1;
+  const canCycle = isPdf && pageEvidenceSpans.length > 1;
+
+  const jumpToSpan = (span: EvidenceSpan) => {
+    locate(locateInputFromContentSpan(span, version, detail.document.display_name));
+  };
+
+  const cycleEvidence = (direction: -1 | 1) => {
+    if (pageEvidenceSpans.length === 0) return;
+    const next =
+      activeEvidenceIndex < 0
+        ? direction > 0
+          ? 0
+          : pageEvidenceSpans.length - 1
+        : (activeEvidenceIndex + direction + pageEvidenceSpans.length) %
+          pageEvidenceSpans.length;
+    jumpToSpan(pageEvidenceSpans[next]);
+  };
 
   return (
     <>
       <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 sm:px-4">
-        {pageCount > 1 ? (
+        {isText ? (
+          <span className="text-xs text-slate-500">
+            全文
+            {content ? ` · ${content.spans.length} 段 · ${content.line_count} 行` : ''}
+          </span>
+        ) : pageCount > 1 ? (
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <input
               type="number"
@@ -405,31 +652,61 @@ function ViewerBody({
             <span>/ {pageCount} 页</span>
           </div>
         ) : (
-          <span className="text-xs text-slate-500">单页文本</span>
+          <span className="text-xs text-slate-500">单页 PDF</span>
         )}
 
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setFontSize((size) => Math.max(12, size - 1))}
-            className="rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-200/70 hover:text-slate-900"
-            title="缩小字号"
-            aria-label="缩小字号"
-          >
-            <Minus className="h-4 w-4" />
-          </button>
-          <span className="w-10 text-center text-[11px] text-slate-600">{fontSize}px</span>
-          <button
-            type="button"
-            onClick={() => setFontSize((size) => Math.min(22, size + 1))}
-            className="rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-200/70 hover:text-slate-900"
-            title="放大字号"
-            aria-label="放大字号"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
+        <div className="flex items-center gap-1" role="group" aria-label="缩放">
+          {ZOOM_OPTIONS.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setZoom(option)}
+              aria-pressed={zoom === option}
+              className={cn(
+                'rounded px-2 py-1 text-[11px] transition-colors',
+                zoom === option
+                  ? 'bg-sky-600 text-white'
+                  : 'text-slate-500 hover:bg-slate-200/70 hover:text-slate-900'
+              )}
+            >
+              {Math.round(option * 100)}%
+            </button>
+          ))}
         </div>
       </div>
+
+      {locationStatus && <LocationBanner status={locationStatus} target={target} />}
+
+      {canCycle && (
+        <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-3 py-1.5 text-[11px] text-slate-500 sm:px-4">
+          <span>
+            本页有 {pageEvidenceSpans.length} 处证据引用
+            {activeEvidenceIndex >= 0
+              ? ` · 当前第 ${activeEvidenceIndex + 1} 处`
+              : ''}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => cycleEvidence(-1)}
+              className="inline-flex items-center gap-0.5 rounded border border-slate-200 px-1.5 py-0.5 text-slate-600 transition-colors hover:border-sky-300 hover:text-sky-700"
+            >
+              <ChevronLeft className="h-3 w-3" />
+              上一处
+            </button>
+            <button
+              type="button"
+              onClick={() => cycleEvidence(1)}
+              className="inline-flex items-center gap-0.5 rounded border border-slate-200 px-1.5 py-0.5 text-slate-600 transition-colors hover:border-sky-300 hover:text-sky-700"
+            >
+              下一处
+              <ChevronRight className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {target && <EvidenceContext target={target} />}
 
       {restrictedWarnings.length > 0 && (
         <div className="flex flex-shrink-0 items-start gap-2 border-b border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800 sm:px-4">
@@ -448,103 +725,246 @@ function ViewerBody({
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-slate-100 p-3 sm:p-4">
-        {loadingContent ? (
-          <div className="flex h-full items-center justify-center gap-2 text-sm text-slate-500">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            正在读取第 {page} 页…
-          </div>
-        ) : contentError ? (
-          <div className="mx-auto max-w-[760px] rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-            {contentError}
-          </div>
-        ) : content ? (
-          <div className="mx-auto w-full max-w-[760px] bg-white shadow-sm ring-1 ring-slate-200">
-            <div className="border-b border-slate-100 px-4 py-2 text-[11px] text-slate-400 sm:px-6">
-              第 {content.page_number} 页
-              {content.width && content.height
-                ? ` · ${Math.round(content.width)} × ${Math.round(content.height)} pt`
-                : ''}
-              {' · '}
-              {content.char_count} 字符 · {content.spans.length} 个片段
-            </div>
+      {isPdf ? (
+        <PdfPageView
+          versionId={version.id}
+          pageNumber={page}
+          zoom={zoom}
+          activeEvidenceId={target?.spanId ?? null}
+          activeBboxes={target?.bboxes ?? []}
+          onPageMetrics={onPdfMetrics}
+          onLoadError={onPdfError}
+        />
+      ) : (
+        <TextViewer
+          detail={detail}
+          content={content}
+          contentError={contentError}
+          loadingContent={loadingContent}
+          zoom={zoom}
+          activeEvidenceId={target?.spanId ?? null}
+          targetRequestId={target?.requestId ?? null}
+          selectedSpanId={selectedSpanId}
+          setSelectedSpanId={setSelectedSpanId}
+        />
+      )}
 
-            <div className="px-4 py-4 sm:px-6" style={{ fontSize }}>
-              {content.is_blank ? (
-                <p className="text-sm text-slate-400">本页没有可抽取的文字。</p>
-              ) : isMarkdown ? (
-                <MarkdownContent
-                  content={content.text}
-                  className="text-slate-800"
-                />
-              ) : (
-                <div className="space-y-1">
-                  {content.spans.map((span) => (
-                    <SpanBlock
-                      key={span.id}
-                      span={span}
-                      selected={selectedSpanId === span.id}
-                      onSelect={() =>
-                        setSelectedSpanId(selectedSpanId === span.id ? null : span.id)
-                      }
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-4 py-2 text-[10px] text-slate-400 sm:px-6">
-              <span className="truncate" title={`SHA-256: ${version.file_hash}`}>
-                SHA-256 {version.file_hash.slice(0, 12)}…
-              </span>
-              <span>
-                {detail.document.version_count} 个版本 · 空间 {workspaceId}
-              </span>
-            </div>
-          </div>
-        ) : null}
+      <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] text-slate-400 sm:px-4">
+        <span className="truncate" title={`SHA-256: ${version.file_hash}`}>
+          SHA-256 {version.file_hash.slice(0, 12)}…
+        </span>
+        <span>
+          {detail.document.version_count} 个版本 · 空间 {workspaceId}
+          {pdfInfo && !isText ? ` · 页面旋转 ${pdfInfo.rotation}°` : ''}
+        </span>
       </div>
     </>
   );
 }
 
-function SpanBlock({
-  span,
-  selected,
-  onSelect,
+function LocationBanner({
+  status,
+  target,
 }: {
-  span: EvidenceSpan;
-  selected: boolean;
-  onSelect: () => void;
+  status: EvidenceLocationStatus;
+  target: EvidenceTarget | null;
 }) {
+  const display = describeLocationStatus(status);
+  if (!display) return null;
+
+  const evidenceId = target?.spanId;
+
   return (
-    <button
-      type="button"
-      onClick={onSelect}
+    <div
       className={cn(
-        'block w-full rounded-md px-2 py-1.5 text-left transition-colors',
-        selected ? 'bg-sky-50 ring-1 ring-sky-200' : 'hover:bg-slate-50'
+        'flex flex-shrink-0 items-start gap-2 border-b px-3 py-2 text-[11px] leading-relaxed sm:px-4',
+        LOCATION_TONE_CLASSES[display.tone]
       )}
+      role="status"
     >
-      <span className="block whitespace-pre-wrap break-words leading-relaxed text-slate-800">
-        {span.text}
-      </span>
-      <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-slate-400">
-        <span>{SPAN_KIND_LABELS[span.kind] ?? span.kind}</span>
-        <span>字符 {span.char_start}–{span.char_end}</span>
-        <span>{span.bboxes.length > 0 ? `${span.bboxes.length} 个文字框` : '无坐标（纯文本）'}</span>
-      </span>
-      {selected && span.bboxes.length > 0 && (
-        <span className="mt-1 block space-y-0.5 font-mono text-[10px] leading-relaxed text-slate-500">
-          {span.bboxes.map((box, index) => (
-            <span key={`${span.id}-${index}`} className="block">
-              框 {index + 1}: x {box.x0}–{box.x1}, y {box.y0}–{box.y1}, 字符{' '}
-              {box.char_start}–{box.char_end}
-            </span>
-          ))}
-        </span>
+      {display.tone === 'loading' ? (
+        <Loader2 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 animate-spin" />
+      ) : display.tone === 'failed' ? (
+        <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+      ) : display.tone === 'approximate' ? (
+        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+      ) : display.tone === 'text' ? (
+        <ScanText className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+      ) : (
+        <Crosshair className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
       )}
-    </button>
+      <span className="min-w-0 flex-1">
+        <span className="font-medium">{display.label}</span>
+        {' · '}
+        {display.detail}
+        {evidenceId && (
+          <span className="ml-1 font-mono text-[10px] opacity-70">
+            #{evidenceId.slice(-8)}
+          </span>
+        )}
+      </span>
+    </div>
+  );
+}
+
+function EvidenceContext({ target }: { target: EvidenceTarget }) {
+  if (!target.text && !target.contextBefore && !target.contextAfter) return null;
+
+  return (
+    <details className="flex-shrink-0 border-b border-slate-200 bg-white px-3 py-1.5 text-[11px] text-slate-500 sm:px-4">
+      <summary className="cursor-pointer select-none text-slate-500 hover:text-slate-700">
+        查看证据上下文（前后段落）
+      </summary>
+      <div className="mt-1.5 space-y-1.5 pb-1 leading-relaxed">
+        <ContextLine label="上文" text={target.contextBefore} />
+        <div className="rounded border border-red-200 bg-red-50/60 px-2 py-1 text-slate-800">
+          {target.text}
+        </div>
+        <ContextLine label="下文" text={target.contextAfter} />
+      </div>
+    </details>
+  );
+}
+
+function ContextLine({ label, text }: { label: string; text?: string | null }) {
+  return (
+    <div>
+      <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+        {label}
+      </span>
+      <p className="whitespace-pre-wrap break-words text-slate-500">
+        {text || '（没有更多上下文）'}
+      </p>
+    </div>
+  );
+}
+
+function TextViewer({
+  detail,
+  content,
+  contentError,
+  loadingContent,
+  zoom,
+  activeEvidenceId,
+  targetRequestId,
+  selectedSpanId,
+  setSelectedSpanId,
+}: {
+  detail: DocumentDetail;
+  content: PageContent | null;
+  contentError: string | null;
+  loadingContent: boolean;
+  zoom: Zoom;
+  activeEvidenceId: string | null;
+  targetRequestId: string | null;
+  selectedSpanId: string | null;
+  setSelectedSpanId: (id: string | null) => void;
+}) {
+  const activeRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!activeEvidenceId) return;
+    const timer = window.setTimeout(() => {
+      activeRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 30);
+    return () => window.clearTimeout(timer);
+  }, [activeEvidenceId, targetRequestId, content?.version_id]);
+
+  if (loadingContent) {
+    return (
+      <div className="flex flex-1 items-center justify-center gap-2 text-sm text-slate-500">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        正在读取全文…
+      </div>
+    );
+  }
+
+  if (contentError) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-4">
+        <div className="max-w-md rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          {contentError}
+        </div>
+      </div>
+    );
+  }
+
+  if (!content) {
+    return (
+      <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
+        暂无可显示的原文
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-0 flex-1 overflow-y-auto bg-slate-100 p-3 sm:p-4">
+      <div className="mx-auto w-full max-w-[760px] bg-white shadow-sm ring-1 ring-slate-200">
+        <div className="border-b border-slate-100 px-4 py-2 text-[11px] text-slate-400 sm:px-6">
+          全文 · {content.char_count} 字符 · {content.line_count} 行 ·{' '}
+          {content.spans.length} 个段落
+        </div>
+
+        <div className="space-y-1 px-3 py-3 sm:px-5" style={{ fontSize: 14 * zoom }}>
+          {content.is_blank ? (
+            <p className="text-sm text-slate-400">本文件没有可抽取的文字。</p>
+          ) : (
+            content.spans.map((span, index) => {
+              const active = span.id === activeEvidenceId;
+              const selected = span.id === selectedSpanId;
+              const range = lineRangeAt(content.text, span.char_start, span.char_end);
+              const exact =
+                content.text.slice(span.char_start, span.char_end) === span.text;
+
+              return (
+                <div
+                  key={span.id}
+                  ref={active ? activeRef : undefined}
+                  onClick={() =>
+                    setSelectedSpanId(selected ? null : span.id)
+                  }
+                  className={cn(
+                    'cursor-pointer rounded-md border-2 px-2.5 py-1.5 transition-colors',
+                    active
+                      ? 'border-red-600 bg-red-50/80 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)]'
+                      : selected
+                        ? 'border-sky-300 bg-sky-50'
+                        : 'border-transparent hover:bg-slate-50'
+                  )}
+                >
+                  <div className="mb-0.5 flex flex-wrap items-center gap-x-2 text-[10px] text-slate-400">
+                    <span>第 {index + 1} 段</span>
+                    <span>{formatLineRange(range)}</span>
+                    <span>{SPAN_KIND_LABELS[span.kind] ?? span.kind}</span>
+                    {active && (
+                      <span className="rounded-full bg-red-100 px-1.5 py-0.5 font-medium text-red-700">
+                        证据位置
+                      </span>
+                    )}
+                    {!exact && <span className="text-amber-600">字符范围不一致</span>}
+                  </div>
+
+                  <p className="whitespace-pre-wrap break-words leading-relaxed text-slate-800">
+                    {span.text}
+                  </p>
+
+                  {active && (span.context_before || span.context_after) && (
+                    <div className="mt-1 space-y-1 border-t border-red-200/70 pt-1 text-[11px] leading-relaxed text-slate-500">
+                      <ContextLine label="上文" text={span.context_before} />
+                      <ContextLine label="下文" text={span.context_after} />
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <div className="border-t border-slate-100 px-4 py-2 text-[10px] text-slate-400 sm:px-6">
+          {detail.document.display_name} · 纯文本按段落与行号定位，不显示 PDF 页码
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -3,6 +3,8 @@
  * 与 docs/architecture.md 「三、流式事件协议」保持一致。
  */
 
+import type { BBox } from './documents';
+
 export interface RunStartedEvent {
   type: 'run_started';
   run_id: string;
@@ -23,17 +25,33 @@ export interface ToolStartedEvent {
   timestamp: string;
 }
 
+/**
+ * search_evidence 返回的证据片段。
+ * 真实检索结果带 document_version_id / bboxes；旧样例数据可能缺少这些字段。
+ */
 export interface EvidenceSpanSample {
   id: string;
+  document_version_id?: string;
   document_name: string;
+  file_name?: string;
+  file_suffix?: string;
   page: number;
+  page_count?: number;
+  support_level?: string;
+  block_index?: number;
+  kind?: string;
   text: string;
-  is_sample: true;
+  char_start?: number;
+  char_end?: number;
+  bboxes?: BBox[];
+  context_before?: string | null;
+  context_after?: string | null;
+  is_sample?: boolean;
 }
 
 export interface SearchEvidenceResult {
   is_sample: boolean;
-  note?: string;
+  note?: string | null;
   evidence_spans: EvidenceSpanSample[];
 }
 

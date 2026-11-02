@@ -105,14 +105,14 @@ npm run dev
 
 ## 项目状态
 
-**当前版本**：v0.2.0-dev (Day 3)
+**当前版本**：v0.3.0-dev (Day 4)
 
 **完成进度**：
 
 - [X] Day 1: 项目初始化与范围定义
 - [X] Day 2: 三栏工作台与流式对话
 - [X] Day 3: 文档导入、不可变版本与证据片段解析
-- [ ] Day 4: 精确高亮定位
+- [X] Day 4: PDF.js 精确高亮定位与页级兜底
 - [ ] Day 5: 检索链路
 - [ ] Day 6: 带证据回答
 - [ ] Day 7: 引用校验
@@ -134,6 +134,7 @@ npm run dev
 - [数据模型](docs/data-model.md)
 - [Day 2 实现说明](docs/day2-implementation.md)
 - [Day 3 实现说明](docs/day3-implementation.md)
+- [Day 4 实现说明](docs/day4-implementation.md)
 - [API 规范](docs/api-spec.md)
 - [开发进度](docs/progress.md)
 

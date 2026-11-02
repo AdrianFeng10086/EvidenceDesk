@@ -5,5 +5,5 @@ export default function WorkspacePage({
 }: {
   params: { id: string };
 }) {
-  return <WorkspaceLayout workspaceId={params.id} />;
+  return <WorkspaceLayout key={params.id} workspaceId={params.id} />;
 }

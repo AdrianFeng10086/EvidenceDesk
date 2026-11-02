@@ -557,21 +557,27 @@ class TextEvidenceBBox:
     page_height: float  # 页面高度，单位 pt
     page: int
   
-# 前端渲染：PDF.js viewport 转换
-const scale = viewport.scale;
-const [x0_px, y0_px] = viewport.convertToViewportPoint(bbox.x0, bbox.y0);
-const [x1_px, y1_px] = viewport.convertToViewportPoint(bbox.x1, bbox.y1);
+# 前端渲染：pdfplumber 与 PDF.js 都是左上角原点（rotation = 0）
+# 注意：不要使用 viewport.convertToViewportPoint，
+# 它期待 PDF 原生左下角坐标，会导致文字框上下镜像。
+const scale = viewport.scale;  // canvas CSS 像素 / PDF 点
+const left = bbox.x0 * scale;
+const top = bbox.y0 * scale;
+const width = (bbox.x1 - bbox.x0) * scale;
+const height = (bbox.y1 - bbox.y0) * scale;
 
 // 显示红色实线矩形
 <div style={{
   position: 'absolute',
-  left: x0_px,
-  top: y0_px,
-  width: x1_px - x0_px,
-  height: y1_px - y0_px,
+  left,
+  top,
+  width,
+  height,
   border: '2px solid #EF4444',  // 红色实线
   pointerEvents: 'none'
 }} />
+
+# 页面旋转不为 0 时不绘制精确矩形，改为页级定位并明确提示
 ```
 
 ### 视觉证据（红色虚线）
@@ -628,7 +634,7 @@ const height_px = box.height * currentHeight;
 | 原点     | 页面左上角                      | 图像左上角       |
 | 精度     | 精确到字符框                    | 近似区域         |
 | 校验     | 文档位置映射                    | 范围与尺寸检查   |
-| 前端转换 | viewport.convertToViewportPoint | 乘以当前显示尺寸 |
+| 前端转换 | bbox × 当前 scale（左上角原点） | 乘以当前显示尺寸 |
 | 显示样式 | 红色实线                        | 红色虚线         |
 
 ## 六、部署架构

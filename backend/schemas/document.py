@@ -138,6 +138,35 @@ class PageContentOut(BaseModel):
     spans: List[EvidenceSpanOut]
 
 
+class EvidenceSpanRefOut(BaseModel):
+    """可定位到原文的真实证据片段，附带文档版本与页面信息。"""
+
+    id: str
+    document_version_id: str
+    document_name: str
+    file_name: str
+    file_suffix: str
+    page: int
+    page_count: int
+    support_level: str
+    block_index: int
+    kind: str
+    text: str
+    char_start: int
+    char_end: int
+    bboxes: List[BBoxOut] = Field(default_factory=list)
+    context_before: Optional[str] = None
+    context_after: Optional[str] = None
+    is_sample: bool = False
+
+
+class EvidenceSearchOut(BaseModel):
+    query: str
+    is_sample: bool = False
+    note: Optional[str] = None
+    evidence_spans: List[EvidenceSpanRefOut] = Field(default_factory=list)
+
+
 class UploadResponseOut(BaseModel):
     duplicate: bool
     document: DocumentSummaryOut

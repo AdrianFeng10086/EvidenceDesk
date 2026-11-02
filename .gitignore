@@ -120,6 +120,8 @@ temp/
 # 生成物
 reports/
 output/
+# PDF.js worker 由 frontend/scripts/copy-pdf-worker.mjs 生成
+frontend/public/pdf.worker.min.mjs
 
 # 样例中较大的原始文档不入库，保留 source.md 等说明与标注
 data/examples/**/documents/*.pdf

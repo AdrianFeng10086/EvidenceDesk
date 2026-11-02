@@ -67,15 +67,20 @@ const runtime = useLocalRuntime(adapter);
 - 失败重试：消息状态为 `incomplete`（`error` 或 `cancelled`）时显示“重试”，
   调用 `messageRuntime.reload()` 从该消息的父节点重新运行。
 
-### 4. 折叠证据卡（Day 2 为样例数据）
+### 4. 折叠证据卡（Day 2 为样例数据，Day 4 已替换）
 
-证据卡通过 `makeAssistantToolUI({ toolName: 'search_evidence', ... })` 注册，
-使用 Radix Accordion 实现折叠，`Accordion.Trigger` 是原生按钮，可通过键盘聚焦并回车展开。
+> **Day 4 更新**：`search_evidence` 现在返回资料空间中真实存在的
+> EvidenceSpan，`is_sample` 为 `false`；点击“定位”会跳转并高亮原文。
+> 详见 [Day 4 实现说明](day4-implementation.md)。下面保留 Day 2 的历史实现，
+> 便于对照。
 
-**样例数据标识**：后端在 `tool_finished` 中返回 `is_sample: true` 与
-`note: "样例数据，非真实检索结果…"`，卡片因此始终显示琥珀色
+证据卡通过 `makeAssistantToolUI({ toolName: 'search_evidence', ... })` 注册。
+Day 2 使用 Radix Accordion 实现折叠；Day 4 改为可展开行与独立的“定位”按钮，
+避免按钮嵌套并加入上下文与页级引用。
+
+**样例数据标识（Day 2）**：后端在 `tool_finished` 中返回 `is_sample: true` 与
+`note: "样例数据，非真实检索结果…"`，卡片显示琥珀色
 “样例数据 · 非真实检索结果”徽标和说明条，避免被误认为真实检索结果。
-Day 5 接入真实检索后，`is_sample` 变为 `false`，徽标自动消失。
 
 ### 5. 移动端布局
 

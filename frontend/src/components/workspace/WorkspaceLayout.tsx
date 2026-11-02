@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FileText, FolderOpen, MessagesSquare, type LucideIcon } from 'lucide-react';
 
+import { useEvidenceLocator } from '@/lib/stores/evidence-locator';
 import { cn } from '@/lib/utils';
 import { ChatPanel } from './ChatPanel';
 import { DocumentViewer } from './DocumentViewer';
@@ -29,8 +30,27 @@ const TABS: { key: PanelKey; label: string; icon: LucideIcon }[] = [
 export function WorkspaceLayout({ workspaceId }: WorkspaceLayoutProps) {
   const [activePanel, setActivePanel] = useState<PanelKey>('chat');
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
+  const evidenceTarget = useEvidenceLocator((state) => state.target);
+  const clearEvidenceTarget = useEvidenceLocator((state) => state.clear);
+  const setEvidenceWorkspace = useEvidenceLocator((state) => state.setWorkspace);
+
+  // 切换资料空间时清掉旧空间的目标，避免把阅读器拉向无权访问的文档版本
+  useEffect(() => {
+    setEvidenceWorkspace(workspaceId);
+    clearEvidenceTarget();
+    setSelectedVersionId(null);
+  }, [workspaceId, setEvidenceWorkspace, clearEvidenceTarget]);
+
+  // 证据卡/页级引用把目标版本推给右侧阅读器；连续点击时以最后一次为准
+  useEffect(() => {
+    if (!evidenceTarget || evidenceTarget.workspaceId !== workspaceId) return;
+    setSelectedVersionId(evidenceTarget.documentVersionId);
+    setActivePanel('docs');
+  }, [evidenceTarget, workspaceId]);
 
   const handleSelectVersion = (versionId: string) => {
+    // 用户主动切换文档时丢弃旧证据目标，避免阅读器被拉回上一份文件
+    clearEvidenceTarget();
     setSelectedVersionId(versionId);
     // 移动端选择文档后直接切到阅读面板；桌面端三栏同时可见，不影响其他面板
     setActivePanel('docs');
