@@ -1,0 +1,22 @@
+{
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.next/**": true,
+    "**/assistant-ui/**": true
+  },
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/assistant-ui": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/assistant-ui": true
+  },
+  "python.analysis.exclude": [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/assistant-ui/**"
+  ]
+}

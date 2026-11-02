@@ -17,8 +17,6 @@ from fastapi.responses import JSONResponse
 import uvicorn
 from dotenv import load_dotenv
 
-# Windows 控制台默认编码为 GBK，日志中的 emoji 会触发 UnicodeEncodeError
-# 导致应用启动失败。只放宽错误处理，保留控制台原有编码，避免中文日志乱码。
 for _stream in (sys.stdout, sys.stderr):
     if hasattr(_stream, "reconfigure"):
         _stream.reconfigure(errors="replace")
