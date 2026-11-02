@@ -19,6 +19,7 @@ from typing import List, Optional
 from sqlalchemy import (
     JSON,
     BigInteger,
+    Boolean,
     DateTime,
     Float,
     ForeignKey,
@@ -52,6 +53,8 @@ class Workspace(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     owner_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    deleted_by: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, onupdate=utcnow, nullable=False
@@ -79,6 +82,8 @@ class Document(Base):
     display_name: Mapped[str] = mapped_column(String(255), nullable=False)
     latest_version_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     version_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    deleted_by: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, onupdate=utcnow, nullable=False
@@ -234,6 +239,173 @@ class ParseJob(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
 
     version: Mapped["DocumentVersion"] = relationship(back_populates="jobs")
+
+
+class Case(Base):
+    """一次决策或核对任务。
+
+    Case 是检索范围的拥有者，可以固定引用多个资料空间中的文档版本。
+    资料空间只负责所有权与存储，不限制 Case 的引用范围。
+    """
+
+    __tablename__ = "cases"
+    __table_args__ = (Index("idx_cases_owner", "owner_id"),)
+
+    id: Mapped[str] = mapped_column(
+        String(64), primary_key=True, default=lambda: new_id("case")
+    )
+    owner_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    primary_workspace_id: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        ForeignKey("workspaces.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utcnow, onupdate=utcnow, nullable=False
+    )
+
+    scope_items: Mapped[List["RetrievalScopeItem"]] = relationship(
+        back_populates="case", cascade="all, delete-orphan"
+    )
+    facts: Mapped[List["Fact"]] = relationship(
+        back_populates="case", cascade="all, delete-orphan"
+    )
+    check_items: Mapped[List["CheckItem"]] = relationship(
+        back_populates="case", cascade="all, delete-orphan"
+    )
+    runs: Mapped[List["Run"]] = relationship(
+        back_populates="case", cascade="all, delete-orphan"
+    )
+
+
+class RetrievalScopeItem(Base):
+    """Case 固定引用的文档版本；可来自任意一个所有者有权访问的空间。"""
+
+    __tablename__ = "case_scope_items"
+    __table_args__ = (
+        UniqueConstraint("case_id", "document_version_id", name="uq_case_scope_version"),
+        Index("idx_case_scope_case", "case_id"),
+        Index("idx_case_scope_version", "document_version_id"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(64), primary_key=True, default=lambda: new_id("scope")
+    )
+    case_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+    )
+    workspace_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
+    )
+    document_version_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("document_versions.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+
+    case: Mapped["Case"] = relationship(back_populates="scope_items")
+
+
+class Fact(Base):
+    """用户提供或确认的事实，用于条件核对。"""
+
+    __tablename__ = "facts"
+    __table_args__ = (UniqueConstraint("case_id", "key", name="uq_facts_case_key"),)
+
+    id: Mapped[str] = mapped_column(
+        String(64), primary_key=True, default=lambda: new_id("fact")
+    )
+    case_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    key: Mapped[str] = mapped_column(String(120), nullable=False)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[str] = mapped_column(String(32), default="user_input", nullable=False)
+    confirmed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utcnow, onupdate=utcnow, nullable=False
+    )
+
+    case: Mapped["Case"] = relationship(back_populates="facts")
+
+
+class CheckItem(Base):
+    """条件核对清单项，证据与事实均可追溯。"""
+
+    __tablename__ = "check_items"
+    __table_args__ = (Index("idx_check_items_case", "case_id"),)
+
+    id: Mapped[str] = mapped_column(
+        String(64), primary_key=True, default=lambda: new_id("check")
+    )
+    case_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+    )
+    requirement: Mapped[str] = mapped_column(Text, nullable=False)
+    premise: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="pending", nullable=False)
+    required_facts: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    evidence_span_ids: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    human_confirmed: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utcnow, onupdate=utcnow, nullable=False
+    )
+
+    case: Mapped["Case"] = relationship(back_populates="check_items")
+
+
+class Run(Base):
+    """Case 的一次执行，保存范围快照与状态，供删除影响和历史标注使用。"""
+
+    __tablename__ = "runs"
+    __table_args__ = (Index("idx_runs_case", "case_id", "created_at"),)
+
+    id: Mapped[str] = mapped_column(
+        String(64), primary_key=True, default=lambda: new_id("run")
+    )
+    case_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(String(24), default="running", nullable=False)
+    query: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    scope_snapshot: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    case: Mapped["Case"] = relationship(back_populates="runs")
+
+
+class SourceTombstone(Base):
+    """已删除来源的墓碑，供历史记录标注来源已删除或不可用。
+
+    不设外键：文档或空间硬删除后墓碑仍需保留文件名、版本和哈希。
+    """
+
+    __tablename__ = "source_tombstones"
+    __table_args__ = (
+        Index("idx_source_tombstones_document", "document_id"),
+        Index("idx_source_tombstones_version", "document_version_id"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(64), primary_key=True, default=lambda: new_id("tombstone")
+    )
+    workspace_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    document_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    document_version_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    display_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    version: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    deleted_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+    deleted_by: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    reason: Mapped[str] = mapped_column(String(48), default="document_deleted", nullable=False)
 
 
 # ---------------------------------------------------------------------------

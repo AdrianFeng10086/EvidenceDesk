@@ -11,6 +11,10 @@ import os
 import sys
 from dotenv import load_dotenv
 
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(errors="replace")
+
 # 加载环境变量
 load_dotenv()
 

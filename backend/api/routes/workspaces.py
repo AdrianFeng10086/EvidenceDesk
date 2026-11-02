@@ -28,7 +28,10 @@ def list_workspaces(
 ) -> List[WorkspaceOut]:
     workspaces = db.scalars(
         select(Workspace)
-        .where(Workspace.owner_id == principal.id)
+        .where(
+            Workspace.owner_id == principal.id,
+            Workspace.deleted_at.is_(None),
+        )
         .order_by(Workspace.created_at)
     ).all()
     return [workspace_out(db, workspace) for workspace in workspaces]

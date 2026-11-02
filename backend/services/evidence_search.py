@@ -13,8 +13,7 @@ from typing import Any, Dict, List, Sequence
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from db.models import Document, DocumentVersion, EvidenceSpan
-from services.storage import original_file_exists
+from db.models import Document, DocumentVersion, EvidenceSpan, Workspace
 
 MAX_CANDIDATES = 5000
 DEFAULT_LIMIT = 5
@@ -92,26 +91,19 @@ def search_workspace_evidence(
         select(EvidenceSpan, DocumentVersion, Document)
         .join(DocumentVersion, DocumentVersion.id == EvidenceSpan.document_version_id)
         .join(Document, Document.id == DocumentVersion.document_id)
+        .join(Workspace, Workspace.id == DocumentVersion.workspace_id)
         .where(
             DocumentVersion.workspace_id == workspace_id,
             DocumentVersion.parse_status == "success",
+            Document.deleted_at.is_(None),
+            Workspace.deleted_at.is_(None),
         )
         .order_by(DocumentVersion.id, EvidenceSpan.page, EvidenceSpan.block_index)
         .limit(MAX_CANDIDATES)
     ).all()
 
-    # 原始文件已被删除的版本不能再作为证据来源，否则证据卡会指向打不开的文档
-    available: Dict[str, bool] = {}
-
-    def version_available(version: DocumentVersion) -> bool:
-        if version.id not in available:
-            available[version.id] = original_file_exists(version.file_path)
-        return available[version.id]
-
     scored = []
     for span, version, document in rows:
-        if not version_available(version):
-            continue
         score = _score(span.text, terms)
         if score > 0:
             scored.append((score, span, version, document))

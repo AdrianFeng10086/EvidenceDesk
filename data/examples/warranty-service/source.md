@@ -21,6 +21,8 @@
    - 来源：[待填写]
    - 内容：响应时间、解决时间、补偿标准
 
+**当前可用演示文档**：`documents/演示规则_设备保修.txt`（自建，文件开头明确标注为演示规则，不代表任何厂商真实保修政策）。
+
 ### 来源说明
 
 **推荐方案**：
@@ -215,11 +217,12 @@
 data/examples/warranty-service/
 ├── source.md                        # 本文件
 ├── documents/
-│   ├── 产品保修条款.pdf
+│   ├── 演示规则_设备保修.txt        # 当前可用的自建演示文档
+│   ├── 产品保修条款.pdf             # 真实/公开资料到位后添加
 │   └── 服务水平协议SLA.txt
 ├── questions/
-│   ├── dev-questions.json
-│   └── eval-questions.json
+│   ├── dev-questions.md
+│   └── eval-questions.md
 └── annotations/
     ├── correct-evidence.json
     ├── time-calculation.md          # 时间计算题答案
@@ -267,4 +270,4 @@ data/examples/warranty-service/
 
 **更新时间**：2024-10-22
 **负责人**：[待填写]
-**状态**：待准备文档
+**状态**：演示文档已就绪；真实保修政策或 SLA 待获取

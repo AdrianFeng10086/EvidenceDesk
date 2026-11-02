@@ -1,0 +1,32 @@
+# 由开发环境生成的后端精确版本快照（直接依赖）。
+# 重新安装依赖后可用 pip freeze 更新完整传递依赖。
+
+fastapi==0.162.0
+uvicorn==0.54.0
+python-multipart==0.0.32
+pydantic==2.14.1
+pydantic-settings==2.16.1
+sqlalchemy==2.1.6
+alembic==1.20.1
+aiosqlite==0.22.1
+pdfplumber==0.11.10
+pypdf==6.21.2
+python-docx==1.2.0
+markdown==3.11.2
+chromadb==1.5.9
+sentence-transformers==6.2.0
+rank-bm25==0.2.2
+openai==3.37.0
+python-dotenv==1.2.4
+pillow==13.0.0
+httpx==0.28.1
+tenacity==9.2.1
+pytest==9.1.1
+pytest-asyncio==1.4.1
+pytest-cov==7.1.0
+reportlab==4.4.9
+black==26.10.1
+isort==9.0.2
+mypy==2.4.0
+ruff==0.17.2
+python-json-logger==4.2.0

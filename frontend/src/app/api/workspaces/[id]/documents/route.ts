@@ -14,7 +14,7 @@ interface RouteContext {
 
 export async function GET(req: NextRequest, { params }: RouteContext) {
   const response = await fetch(
-    `${BACKEND_URL}/api/workspaces/${encodeURIComponent(params.id)}/documents`,
+    `${BACKEND_URL}/api/workspaces/${encodeURIComponent(params.id)}/documents${req.nextUrl.search}`,
     {
       headers: backendHeaders(req),
       cache: 'no-store',

@@ -10,18 +10,23 @@
 ## 一、模型层级关系
 
 ```
-Workspace (资料空间)
-  ├── Document (逻辑文档，按文件名去重)
-  │     └── DocumentVersion (不可变内容版本)
-  │           ├── DocumentPage (页面原文，字符偏移基准)
-  │           ├── EvidenceSpan (文本证据片段)
-  │           └── ParseJob (解析任务与错误)
+Workspace (资料空间，所有权/存储/删除边界)
+  └── Document (逻辑文档，按文件名去重)
+        └── DocumentVersion (不可变内容版本)
+              ├── DocumentPage (页面原文，字符偏移基准)
+              ├── EvidenceSpan (文本证据片段)
+              └── ParseJob (解析任务与错误)
+
+Case (决策或核对任务，检索范围的拥有者)
+  ├── RetrievalScopeItem → DocumentVersion (可来自多个 Workspace)
   ├── Fact (用户事实)
   ├── CheckItem (核对清单项)
   └── Run (执行记录)
         └── Claim (结论)
               ├── → EvidenceSpan (关联)
               └── → VisualEvidence (关联)
+
+SourceTombstone (已删除来源的文件名、版本、哈希与删除时间)
 ```
 
 ## 二、Pydantic 模型定义
@@ -794,7 +799,12 @@ def get_collection(workspace_id: str, version: str = "latest"):
 
 ```python
 # 软删除：保留数据但标记为不可用
-class DocumentVersion(BaseModel):
+class Workspace(BaseModel):
+    ...
+    deleted_at: Optional[datetime] = None
+    deleted_by: Optional[str] = None
+
+class Document(BaseModel):
     ...
     deleted_at: Optional[datetime] = None
     deleted_by: Optional[str] = None
@@ -806,6 +816,8 @@ RETENTION_POLICY = {
     "deleted_documents": 30,  # 删除的文档保留 30 天后物理删除
 }
 ```
+
+文档软删除后立即从列表、详情和检索中排除，索引条目同步移除；保留期内可恢复。硬删除后只保留 `SourceTombstone`（文件名、版本、哈希、删除时间），历史 Run 标记 `document_deleted` 或 `workspace_deleted`，不级联删除 Case 与 Run。同一空间内的同名唯一约束只应作用于未删除文档；重新上传同名文件时恢复原文档或创建新的活跃文档，不能报唯一约束错误。
 
 ### 清理任务
 

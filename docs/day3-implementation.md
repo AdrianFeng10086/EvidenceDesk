@@ -12,21 +12,27 @@
 | 上传 / 解析 / 索引准备 / 成功 / 失败状态 | ✅ | `DocumentVersion.parse_status`、`ParseJob` |
 | 解析任务与错误提示 | ✅ | `ParseJob`、`GET /api/documents/{id}/status` |
 | 资料空间绑定访问主体与所有权校验 | ✅ | `backend/services/access.py` |
+| 文档软删除、恢复、删除影响统计与来源墓碑 | ✅ | `backend/api/routes/documents.py`、`SourceTombstone` |
+| 同名唯一约束只作用于活跃文档；软删除后重传同名文件 | ✅ | 上传时恢复原文档，不触发唯一约束 |
 | 损坏 / 扫描 / 空白 / 超限文件明确状态 | ✅ | `backend/tests/test_parse_failures.py` |
 | 布局不可靠时标记“受限” | ✅ | `support_level=restricted` + `warnings` |
 | 前端文档列表、上传、状态轮询、原文阅读 | ✅ | `frontend/src/components/workspace/FileList.tsx`、`DocumentViewer.tsx` |
+| 前端删除确认、回收站与恢复 | ✅ | `FileList.tsx`、`DeleteImpactDialog` |
 | 前端 Markdown 渲染优化 | ✅ | `frontend/src/components/markdown/MarkdownContent.tsx` |
 | 对话框长宽自适应 | ✅ | `ChatPanel.tsx`（`minRows/maxRows`、视口高度上限、响应式宽度） |
 
 ## 一、数据模型与不可变版本
 
 ```
-Workspace (owner_id)
-  └── Document (逻辑文档，按规范化文件名去重)
+Workspace (owner_id, deleted_at/deleted_by)
+  └── Document (逻辑文档，按规范化文件名去重, deleted_at/deleted_by)
         └── DocumentVersion (不可变内容版本)
               ├── DocumentPage (页面原文，字符偏移基准)
               ├── EvidenceSpan (段落/行证据 + 文字框)
               └── ParseJob (解析任务与错误)
+
+SourceTombstone (已删除来源：文件名、版本、哈希、删除时间)
+Case / RetrievalScopeItem (Day 1 数据模型，Day 5 起用于检索范围)
 ```
 
 关键规则：
@@ -40,6 +46,9 @@ Workspace (owner_id)
    ```
    上传先写入 `.staging/{uuid}`，校验通过后才移动到版本目录；重复文件只删除暂存副本。
 5. 失败重试只清理**当前版本**的半成品页面/证据，不触碰历史版本。
+6. **软删除**：`Document.deleted_at` 置位后立即从列表、详情、原文和检索中排除；文件和解析结果保留 30 天，供恢复。删除时每个版本写入一条 `SourceTombstone`。
+7. **同名重传**：上传命中已软删除文档时恢复该文档并追加新版本；同哈希重传则恢复原文档，不触发 `(workspace_id, normalized_name)` 唯一约束。
+8. **活跃文档限额**：软删除文档不占用 10 个文件名额；恢复或新上传会重新检查活跃文档数量。
 
 ## 二、解析规则
 
@@ -109,8 +118,12 @@ uploaded -> parsing -> indexing -> success
 | GET | `/api/workspaces` | 当前主体可访问的资料空间 |
 | POST | `/api/workspaces` | 创建资料空间，`owner_id=当前主体` |
 | GET | `/api/workspaces/{id}` | 资料空间元数据 |
-| GET | `/api/workspaces/{id}/documents` | 文档列表（含全部版本与解析状态） |
+| GET | `/api/workspaces/{id}/documents` | 文档列表（含全部版本与解析状态；默认不含已删除） |
+| GET | `/api/workspaces/{id}/documents?include_deleted=true` | 包含回收站中的软删除文档 |
 | POST | `/api/workspaces/{id}/documents` | 上传文件（multipart，可带 `upload_source`/`applicable_scope`） |
+| GET | `/api/workspaces/{id}/documents/{document_id}/delete-impact` | 删除影响：版本、页面、证据片段、引用 Case、最近 Run |
+| DELETE | `/api/workspaces/{id}/documents/{document_id}` | 软删除文档并写入来源墓碑 |
+| POST | `/api/workspaces/{id}/documents/{document_id}/restore` | 恢复保留期内的软删除文档 |
 | GET | `/api/documents/{version_id}` | 版本详情、页面摘要、解析任务 |
 | GET | `/api/documents/{version_id}/status` | 轻量状态轮询 |
 | GET | `/api/documents/{version_id}/content?page=1` | 页面原文 + 证据片段 + 文字框 |
@@ -162,7 +175,8 @@ uploaded -> parsing -> indexing -> success
 ## 五、前端
 
 - **FileList**：真实接口、拖拽/按钮上传、1.2 秒轮询中间状态、版本号与页数、
-  失败错误码与“重新解析”、受限标签。
+  失败错误码与“重新解析”、受限标签；删除前拉取影响并展示被引用的 Case/最近 Run，
+  确认后软删除；回收站视图可恢复文档。删除当前选中文档时清空阅读器和证据目标。
 - **DocumentViewer**：解析进度步骤、失败详情、版本切换、页码切换、字号调整、
   下载原始文件、按片段展示原文；点击片段可查看文字框坐标与字符范围。
 - **Markdown**：assistant 消息和 Markdown 文档共用 `MarkdownContent`，支持标题、
@@ -180,10 +194,12 @@ cd backend
 python -m pytest tests -q
 ```
 
-结果：`26 passed`。
+结果：`38 passed`。
 
 覆盖：
 
+- `tests/test_deletion.py`：软删除后列表/详情/原文/检索全部不可用；回收站可列出；恢复后重新可用；重复删除 409；同名重传恢复文档并生成新版本；同哈希重传恢复原文档并补回缺失的原始文件；删除影响列出引用 Case 与最近 Run；原始文件缺失时拒绝恢复。
+- `tests/test_case_scope.py`：一个 Case 固定引用两个资料空间的版本；资料空间删除后其文档与检索不可访问。
 - `tests/test_pdf_layouts.py`：三份不同布局 PDF
   - 单栏双页：`support_level=full`，核对两页原文、页码、标题/段落/列表片段、文字框与字符映射；
   - 双栏：`restricted` + `LAYOUT_MULTI_COLUMN`，退回逐行片段；

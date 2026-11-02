@@ -109,8 +109,31 @@ class DocumentSummaryOut(BaseModel):
     version_count: int
     latest_version: Optional[DocumentVersionOut] = None
     versions: List[DocumentVersionOut] = Field(default_factory=list)
+    deleted_at: Optional[datetime] = None
+    deleted_by: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+
+
+class CaseRefOut(BaseModel):
+    id: str
+    title: str
+
+
+class RunRefOut(BaseModel):
+    id: str
+    case_id: str
+    status: str
+    created_at: datetime
+
+
+class DocumentDeleteImpactOut(BaseModel):
+    document: DocumentSummaryOut
+    version_count: int
+    page_count: int
+    span_count: int
+    referencing_cases: List[CaseRefOut] = Field(default_factory=list)
+    recent_runs: List[RunRefOut] = Field(default_factory=list)
 
 
 class DocumentListOut(BaseModel):

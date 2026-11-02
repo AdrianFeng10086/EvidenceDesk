@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import (
     APIRouter,
@@ -17,7 +17,7 @@ from fastapi import (
     UploadFile,
 )
 from fastapi.responses import FileResponse
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from api.serializers import (
@@ -31,10 +31,24 @@ from api.serializers import (
 )
 from core.config import get_settings
 from core.database import get_db
-from db.models import Document, DocumentVersion, ParseJob, new_id, utcnow
+from db.models import (
+    Case,
+    Document,
+    DocumentPage,
+    DocumentVersion,
+    EvidenceSpan,
+    ParseJob,
+    RetrievalScopeItem,
+    Run,
+    SourceTombstone,
+    new_id,
+    utcnow,
+)
 from schemas.document import (
+    DocumentDeleteImpactOut,
     DocumentDetailOut,
     DocumentListOut,
+    DocumentSummaryOut,
     EvidenceSearchOut,
     EvidenceSpanRefOut,
     PageContentOut,
@@ -71,34 +85,19 @@ router = APIRouter()
 )
 def list_documents(
     workspace_id: str,
+    include_deleted: bool = Query(False, description="是否包含已软删除的文档"),
     db: Session = Depends(get_db),
     principal: Principal = Depends(get_principal),
 ) -> DocumentListOut:
     workspace = require_workspace_access(db, workspace_id, principal)
-    documents = db.scalars(
-        select(Document)
-        .where(Document.workspace_id == workspace.id)
-        .order_by(Document.updated_at.desc())
-    ).all()
-    # 原始文件已被删除的文档不再出现在列表中，避免留下无法打开的指向
-    visible = [doc for doc in documents if _document_original_exists(db, doc)]
+    query = select(Document).where(Document.workspace_id == workspace.id)
+    if not include_deleted:
+        query = query.where(Document.deleted_at.is_(None))
+    documents = db.scalars(query.order_by(Document.updated_at.desc())).all()
     return DocumentListOut(
         workspace=workspace_out(db, workspace),
-        documents=[document_summary(db, doc) for doc in visible],
+        documents=[document_summary(db, doc) for doc in documents],
     )
-
-
-def _document_original_exists(db: Session, document: Document) -> bool:
-    latest: Optional[DocumentVersion] = None
-    if document.latest_version_id:
-        latest = db.get(DocumentVersion, document.latest_version_id)
-    if latest is None:
-        latest = db.scalars(
-            select(DocumentVersion)
-            .where(DocumentVersion.document_id == document.id)
-            .order_by(DocumentVersion.version.desc())
-        ).first()
-    return latest is not None and original_file_exists(latest.file_path)
 
 
 @router.get(
@@ -154,18 +153,8 @@ async def upload_document(
         )
     ).first()
 
-    if document is None:
-        document_count = db.scalar(
-            select(func.count())
-            .select_from(Document)
-            .where(Document.workspace_id == workspace.id)
-        )
-        if int(document_count or 0) >= settings.max_documents_per_workspace:
-            raise ConflictError(
-                f"资料空间最多允许 {settings.max_documents_per_workspace} 个文档",
-                code="WORKSPACE_DOCUMENT_LIMIT",
-                details={"limit": settings.max_documents_per_workspace},
-            )
+    if document is None or document.deleted_at is not None:
+        _assert_document_capacity(db, workspace.id, settings.max_documents_per_workspace)
 
     staging_dir = settings.upload_dir / ".staging" / uuid.uuid4().hex
     saved = await stage_upload(
@@ -185,10 +174,33 @@ async def upload_document(
         ).first()
 
         if duplicate is not None:
-            remove_staged(saved)
             duplicate_document = db.get(Document, duplicate.document_id)
             if duplicate_document is None:  # pragma: no cover — 数据一致性兜底
                 raise NotFoundError("重复文件对应的文档不存在")
+            if duplicate_document.deleted_at is not None:
+                _assert_document_capacity(
+                    db, workspace.id, settings.max_documents_per_workspace
+                )
+                # 已删除文档的原始文件可能已被清理；上传的同一份文件可以补回该版本文件
+                if not original_file_exists(duplicate.file_path):
+                    saved = finalize_upload(
+                        saved,
+                        workspace_id=duplicate.workspace_id,
+                        document_id=duplicate.document_id,
+                        version_id=duplicate.id,
+                    )
+                    if Path(saved.path).resolve() != Path(duplicate.file_path).resolve():
+                        raise ConflictError(
+                            "原始文件位置已变化，无法恢复该版本",
+                            code="ORIGINAL_FILE_MISSING",
+                        )
+                else:
+                    remove_staged(saved)
+                _restore_document(db, duplicate_document)
+                db.commit()
+                committed = True
+            else:
+                remove_staged(saved)
             response.status_code = 200
             return UploadResponseOut(
                 duplicate=True,
@@ -208,6 +220,9 @@ async def upload_document(
             )
             db.add(document)
             db.flush()
+        elif document.deleted_at is not None:
+            # 同名文档曾被软删除：重新上传时恢复该文档，避免命中旧的唯一约束
+            _restore_document(db, document)
 
         next_version = document.version_count + 1
         version_id = new_id("ver")
@@ -285,6 +300,224 @@ def _queued_job_stub(version: DocumentVersion, status: str):
         attempt=0,
         created_at=version.uploaded_at,
     )
+
+
+def _assert_document_capacity(db: Session, workspace_id: str, limit: int) -> None:
+    """新上传或恢复文档都会占用一个活跃文档名额。"""
+    active_count = db.scalar(
+        select(func.count())
+        .select_from(Document)
+        .where(
+            Document.workspace_id == workspace_id,
+            Document.deleted_at.is_(None),
+        )
+    )
+    if int(active_count or 0) >= limit:
+        raise ConflictError(
+            f"资料空间最多允许 {limit} 个文档",
+            code="WORKSPACE_DOCUMENT_LIMIT",
+            details={"limit": limit},
+        )
+
+
+def _restore_document(db: Session, document: Document) -> None:
+    """恢复软删除文档，并移除它的来源墓碑。"""
+    document.deleted_at = None
+    document.deleted_by = None
+    document.updated_at = utcnow()
+    db.execute(
+        delete(SourceTombstone).where(SourceTombstone.document_id == document.id)
+    )
+
+
+def _get_workspace_document(
+    db: Session,
+    workspace_id: str,
+    document_id: str,
+    principal: Principal,
+) -> tuple[Document, list[DocumentVersion]]:
+    workspace = require_workspace_access(db, workspace_id, principal)
+    document = db.get(Document, document_id)
+    if document is None or document.workspace_id != workspace.id:
+        raise NotFoundError(
+            "文档不存在",
+            details={"document_id": document_id},
+        )
+    versions = list(
+        db.scalars(
+            select(DocumentVersion)
+            .where(DocumentVersion.document_id == document.id)
+            .order_by(DocumentVersion.version.desc())
+        ).all()
+    )
+    return document, versions
+
+
+@router.get(
+    "/workspaces/{workspace_id}/documents/{document_id}/delete-impact",
+    response_model=DocumentDeleteImpactOut,
+    tags=["文档"],
+)
+def get_document_delete_impact(
+    workspace_id: str,
+    document_id: str,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(get_principal),
+) -> DocumentDeleteImpactOut:
+    """删除前展示影响：版本、页面、证据片段、引用该文档的 Case 和最近 Run。"""
+    document, versions = _get_workspace_document(
+        db, workspace_id, document_id, principal
+    )
+    version_ids = [version.id for version in versions]
+
+    page_count = 0
+    span_count = 0
+    cases: list[Any] = []
+    runs: list[Any] = []
+    if version_ids:
+        page_count = int(
+            db.scalar(
+                select(func.count())
+                .select_from(DocumentPage)
+                .where(DocumentPage.document_version_id.in_(version_ids))
+            )
+            or 0
+        )
+        span_count = int(
+            db.scalar(
+                select(func.count())
+                .select_from(EvidenceSpan)
+                .where(EvidenceSpan.document_version_id.in_(version_ids))
+            )
+            or 0
+        )
+        cases = db.execute(
+            select(Case.id, Case.title)
+            .join(RetrievalScopeItem, RetrievalScopeItem.case_id == Case.id)
+            .where(
+                RetrievalScopeItem.document_version_id.in_(version_ids),
+                Case.owner_id == principal.id,
+            )
+            .distinct()
+            .order_by(Case.updated_at.desc())
+        ).all()
+        runs = db.execute(
+            select(Run.id, Run.case_id, Run.status, Run.created_at)
+            .join(Case, Case.id == Run.case_id)
+            .join(RetrievalScopeItem, RetrievalScopeItem.case_id == Run.case_id)
+            .where(
+                RetrievalScopeItem.document_version_id.in_(version_ids),
+                Case.owner_id == principal.id,
+            )
+            .distinct()
+            .order_by(Run.created_at.desc())
+            .limit(5)
+        ).all()
+
+    from schemas.document import CaseRefOut, RunRefOut
+
+    return DocumentDeleteImpactOut(
+        document=document_summary(db, document),
+        version_count=len(versions),
+        page_count=page_count,
+        span_count=span_count,
+        referencing_cases=[
+            CaseRefOut(id=row[0], title=row[1]) for row in cases
+        ],
+        recent_runs=[
+            RunRefOut(
+                id=row[0],
+                case_id=row[1],
+                status=row[2],
+                created_at=row[3],
+            )
+            for row in runs
+        ],
+    )
+
+
+@router.delete(
+    "/workspaces/{workspace_id}/documents/{document_id}",
+    response_model=DocumentSummaryOut,
+    tags=["文档"],
+)
+def delete_document(
+    workspace_id: str,
+    document_id: str,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(get_principal),
+) -> DocumentSummaryOut:
+    """软删除文档；文件与解析产物保留，供保留期内恢复。"""
+    document, versions = _get_workspace_document(
+        db, workspace_id, document_id, principal
+    )
+    if document.deleted_at is not None:
+        raise ConflictError("文档已删除", code="DOCUMENT_ALREADY_DELETED")
+
+    document.deleted_at = utcnow()
+    document.deleted_by = principal.id
+    document.updated_at = utcnow()
+
+    for version in versions:
+        existing = db.scalars(
+            select(SourceTombstone).where(
+                SourceTombstone.document_version_id == version.id
+            )
+        ).first()
+        if existing is None:
+            db.add(
+                SourceTombstone(
+                    workspace_id=version.workspace_id,
+                    document_id=document.id,
+                    document_version_id=version.id,
+                    display_name=document.display_name,
+                    file_name=version.file_name,
+                    file_hash=version.file_hash,
+                    version=version.version,
+                    deleted_by=principal.id,
+                    reason="document_deleted",
+                )
+            )
+
+    db.commit()
+    db.refresh(document)
+    return document_summary(db, document)
+
+
+@router.post(
+    "/workspaces/{workspace_id}/documents/{document_id}/restore",
+    response_model=DocumentSummaryOut,
+    tags=["文档"],
+)
+def restore_document(
+    workspace_id: str,
+    document_id: str,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(get_principal),
+) -> DocumentSummaryOut:
+    """恢复保留期内的软删除文档。"""
+    document, versions = _get_workspace_document(
+        db, workspace_id, document_id, principal
+    )
+    if document.deleted_at is None:
+        raise ConflictError("文档未删除，无需恢复", code="DOCUMENT_NOT_DELETED")
+
+    latest = next(
+        (version for version in versions if version.id == document.latest_version_id),
+        versions[0] if versions else None,
+    )
+    if latest is None:
+        raise ConflictError("文档没有可恢复的版本", code="DOCUMENT_EMPTY")
+    if not original_file_exists(latest.file_path):
+        raise ConflictError(
+            "原始文件已丢失，无法恢复该文档",
+            code="ORIGINAL_FILE_MISSING",
+        )
+
+    _restore_document(db, document)
+    db.commit()
+    db.refresh(document)
+    return document_summary(db, document)
 
 
 @router.get("/documents/{version_id}", response_model=DocumentDetailOut, tags=["文档"])

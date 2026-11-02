@@ -34,11 +34,40 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def init_db() -> None:
-    """建表并写入演示资料空间。"""
+    """建表、补齐旧库字段并写入演示资料空间。"""
     from db import models  # noqa: F401 — 注册所有表
 
     models.Base.metadata.create_all(bind=engine)
+    _migrate_schema()
     seed_demo_workspace()
+
+
+def _migrate_schema() -> None:
+    """SQLite 轻量迁移：create_all 只建新表，不会给旧表加列。"""
+    if not settings.database_url.startswith("sqlite"):
+        return
+
+    columns = {
+        "workspaces": (
+            ("deleted_at", "DATETIME"),
+            ("deleted_by", "VARCHAR(128)"),
+        ),
+        "documents": (
+            ("deleted_at", "DATETIME"),
+            ("deleted_by", "VARCHAR(128)"),
+        ),
+    }
+    with engine.begin() as connection:
+        for table, additions in columns.items():
+            existing = {
+                row[1]
+                for row in connection.exec_driver_sql(f"PRAGMA table_info({table})")
+            }
+            for name, ddl_type in additions:
+                if name not in existing:
+                    connection.exec_driver_sql(
+                        f"ALTER TABLE {table} ADD COLUMN {name} {ddl_type}"
+                    )
 
 
 def seed_demo_workspace() -> None:

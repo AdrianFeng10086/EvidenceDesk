@@ -98,14 +98,16 @@ npm run dev
 
 每个样例包含：
 
-- 文档文件（PDF/TXT）
-- 来源说明（source.md）
-- 开发测试问题（dev-questions.md）
-- 保留测试问题（eval-questions.md）
+- 可上传的演示文档（`documents/`）
+- 来源说明（`source.md`）
+- 开发测试问题 8 个（`questions/dev-questions.md`）
+- 保留测试问题 12 个（`questions/eval-questions.md`）
+
+当前三份文档均为**自建演示规则**，文件开头已明确标注；真实可核实案例尚未取得。详见 [data/examples/README.md](data/examples/README.md)。
 
 ## 项目状态
 
-**当前版本**：v0.3.0-dev (Day 4)
+**当前版本**：v0.3.1-dev (Day 1–4 修补)
 
 **完成进度**：
 
@@ -113,6 +115,7 @@ npm run dev
 - [X] Day 2: 三栏工作台与流式对话
 - [X] Day 3: 文档导入、不可变版本与证据片段解析
 - [X] Day 4: PDF.js 精确高亮定位与页级兜底
+- [X] Day 1–4 修补: Case 范围模型、文档软删除/恢复、来源墓碑、回收站与删除影响提示
 - [ ] Day 5: 检索链路
 - [ ] Day 6: 带证据回答
 - [ ] Day 7: 引用校验
@@ -153,6 +156,23 @@ npm run dev
 - 开发团队：[待填写]
 - 联系方式：[待填写]
 - 比赛信息：2024 年度人工智能赛道
+
+## 自研与依赖
+
+**自研部分**：
+
+- FastAPI 上传、版本、解析状态、证据检索与删除/恢复接口
+- PDF/TXT/Markdown 解析适配、EvidenceSpan 与文字框映射
+- 证据卡、原文阅读器、精确高亮、页级兜底与定位状态
+- 资料空间、任务范围、软删除与来源墓碑的数据模型
+
+**第三方依赖**：
+
+- assistant-ui 提供对话运行时与工具卡片适配，业务逻辑和 Evidence UI 为自研
+- PDF.js 负责浏览器端 PDF 渲染与页面画布，坐标换算和高亮层为自研
+- pdfplumber、Chroma、OpenAI 兼容客户端等仅作为库使用
+
+仓库根目录的 `assistant-ui/` 是上游参考副本，被 `.gitignore` 排除；前端实际依赖 npm 包 `@assistant-ui/react`，不直接复制其 workspace 配置。
 
 ## 许可说明
 

@@ -1,7 +1,9 @@
 import type {
   ApiErrorBody,
+  DocumentDeleteImpact,
   DocumentDetail,
   DocumentListResponse,
+  DocumentSummary,
   PageContent,
   UploadResponse,
 } from '@/lib/types/documents';
@@ -45,10 +47,50 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-export function listDocuments(workspaceId: string): Promise<DocumentListResponse> {
+export function listDocuments(
+  workspaceId: string,
+  options: { includeDeleted?: boolean } = {}
+): Promise<DocumentListResponse> {
+  const query = options.includeDeleted ? '?include_deleted=true' : '';
   return request<DocumentListResponse>(
-    `/api/workspaces/${encodeURIComponent(workspaceId)}/documents`,
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/documents${query}`,
     { cache: 'no-store' }
+  );
+}
+
+export function getDocumentDeleteImpact(
+  workspaceId: string,
+  documentId: string
+): Promise<DocumentDeleteImpact> {
+  return request<DocumentDeleteImpact>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/documents/${encodeURIComponent(
+      documentId
+    )}/delete-impact`,
+    { cache: 'no-store' }
+  );
+}
+
+export function deleteDocument(
+  workspaceId: string,
+  documentId: string
+): Promise<DocumentSummary> {
+  return request<DocumentSummary>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/documents/${encodeURIComponent(
+      documentId
+    )}`,
+    { method: 'DELETE' }
+  );
+}
+
+export function restoreDocument(
+  workspaceId: string,
+  documentId: string
+): Promise<DocumentSummary> {
+  return request<DocumentSummary>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/documents/${encodeURIComponent(
+      documentId
+    )}/restore`,
+    { method: 'POST' }
   );
 }
 

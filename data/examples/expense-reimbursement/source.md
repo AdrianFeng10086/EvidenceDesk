@@ -21,6 +21,8 @@
    - 来源：[待填写]
    - 内容：差旅补助标准、票据要求
 
+**当前可用演示文档**：`documents/演示规则_费用报销.txt`（自建，文件开头明确标注为演示规则，不代表任何企业真实制度）。
+
 ### 来源说明
 
 **推荐方案**：
@@ -178,11 +180,12 @@
 data/examples/expense-reimbursement/
 ├── source.md                        # 本文件
 ├── documents/
-│   ├── 员工费用报销管理办法.pdf
+│   ├── 演示规则_费用报销.txt        # 当前可用的自建演示文档
+│   ├── 员工费用报销管理办法.pdf     # 真实/公开资料到位后添加
 │   └── 差旅费报销细则.txt
 ├── questions/
-│   ├── dev-questions.json
-│   └── eval-questions.json
+│   ├── dev-questions.md
+│   └── eval-questions.md
 └── annotations/
     ├── correct-evidence.json
     ├── calculation-examples.md      # 计算题答案
@@ -215,4 +218,4 @@ data/examples/expense-reimbursement/
 
 **更新时间**：2024-10-22
 **负责人**：[待填写]
-**状态**：待准备文档
+**状态**：演示文档已就绪；真实制度待获取或授权

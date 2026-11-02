@@ -21,6 +21,8 @@
    - 来源：[待填写]
    - 内容：常见问题解答
 
+**当前可用演示文档**：`documents/演示规则_项目申报.txt`（自建，文件开头明确标注为演示规则，不代表真实政策）。
+
 ### 来源说明
 
 **首选方案**：联系高校科研处或项目管理部门，获取真实但可公开的申报指南。标注来源和使用权限。
@@ -153,11 +155,12 @@
 data/examples/project-application/
 ├── source.md                        # 本文件
 ├── documents/
-│   ├── 科研项目申报指南2024.pdf
+│   ├── 演示规则_项目申报.txt        # 当前可用的自建演示文档
+│   ├── 科研项目申报指南2024.pdf     # 真实资料到位后添加
 │   └── 项目申报FAQ.txt
 ├── questions/
-│   ├── dev-questions.json          # 开发集问题
-│   └── eval-questions.json         # 保留测试集问题
+│   ├── dev-questions.md            # 8 个开发集问题
+│   └── eval-questions.md           # 12 个保留测试问题
 └── annotations/
     ├── correct-evidence.json       # 正确证据标注
     └── edge-cases.md               # 边界情况说明
@@ -186,4 +189,4 @@ data/examples/project-application/
 
 **更新时间**：2024-10-22
 **负责人**：[待填写]
-**状态**：待获取文档
+**状态**：演示文档已就绪；真实案例待获取

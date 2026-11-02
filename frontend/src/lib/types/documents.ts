@@ -53,8 +53,31 @@ export interface DocumentSummary {
   version_count: number;
   latest_version?: DocumentVersion | null;
   versions: DocumentVersion[];
+  deleted_at?: string | null;
+  deleted_by?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface CaseRef {
+  id: string;
+  title: string;
+}
+
+export interface RunRef {
+  id: string;
+  case_id: string;
+  status: string;
+  created_at: string;
+}
+
+export interface DocumentDeleteImpact {
+  document: DocumentSummary;
+  version_count: number;
+  page_count: number;
+  span_count: number;
+  referencing_cases: CaseRef[];
+  recent_runs: RunRef[];
 }
 
 export interface DocumentListResponse {

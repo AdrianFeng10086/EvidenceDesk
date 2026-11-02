@@ -18,7 +18,6 @@ from sqlalchemy.orm import Session
 from core.config import get_settings
 from db.models import Document, DocumentVersion, Workspace
 from services.errors import ForbiddenError, NotFoundError
-from services.storage import original_file_exists
 
 
 @dataclass(frozen=True)
@@ -73,8 +72,12 @@ def require_workspace_access(
         db.commit()
         db.refresh(workspace)
 
-    if workspace is None:
-        raise NotFoundError("资料空间不存在", details={"workspace_id": workspace_id})
+    if workspace is None or workspace.deleted_at is not None:
+        raise NotFoundError(
+            "资料空间不存在或已删除",
+            code="WORKSPACE_DELETED" if workspace is not None else "NOT_FOUND",
+            details={"workspace_id": workspace_id},
+        )
 
     return _ensure_owner(workspace, principal)
 
@@ -95,16 +98,12 @@ def require_version_access(
     version = db.get(DocumentVersion, version_id)
     if version is None:
         raise NotFoundError("文档版本不存在", details={"version_id": version_id})
-    if not original_file_exists(version.file_path):
-        # 原始文件被删除后，数据库里的版本与证据片段不再可用，
-        # 统一按“文档已不存在”处理，避免前端继续指向已被删除的文档。
+    document = db.get(Document, version.document_id)
+    if document is None or document.deleted_at is not None:
         raise NotFoundError(
-            "原始文件已丢失，文档可能已被删除",
-            code="ORIGINAL_FILE_MISSING",
+            "文档不存在或已删除",
+            code="DOCUMENT_DELETED",
             details={"version_id": version_id},
         )
-    document = db.get(Document, version.document_id)
-    if document is None:
-        raise NotFoundError("文档不存在", details={"document_id": version.document_id})
     workspace = require_workspace_access(db, version.workspace_id, principal)
     return version, document, workspace

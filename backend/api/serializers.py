@@ -31,7 +31,12 @@ from schemas.document import (
 
 def workspace_out(db: Session, workspace: Workspace) -> WorkspaceOut:
     count = db.scalar(
-        select(func.count()).select_from(Document).where(Document.workspace_id == workspace.id)
+        select(func.count())
+        .select_from(Document)
+        .where(
+            Document.workspace_id == workspace.id,
+            Document.deleted_at.is_(None),
+        )
     )
     return WorkspaceOut(
         id=workspace.id,
@@ -112,6 +117,8 @@ def document_summary(
         version_count=document.version_count,
         latest_version=version_out(latest) if latest else None,
         versions=[version_out(v) for v in versions] if include_versions else [],
+        deleted_at=document.deleted_at,
+        deleted_by=document.deleted_by,
         created_at=document.created_at,
         updated_at=document.updated_at,
     )

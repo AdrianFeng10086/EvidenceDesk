@@ -74,14 +74,41 @@
 ### 核心实体关系
 
 ```python
-# Workspace / Case：资料空间与决策事项
+# Workspace：资料空间，负责所有权、存储与删除边界
 class Workspace:
     id: str
     name: str
     description: str
     owner_id: str  # 访问控制
+    deleted_at: Optional[datetime]
+    deleted_by: Optional[str]
     created_at: datetime
     updated_at: datetime
+
+# Case：一次决策或核对任务，拥有检索范围
+class Case:
+    id: str
+    owner_id: str
+    title: str
+    description: Optional[str]
+    primary_workspace_id: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+# RetrievalScopeItem：Case 固定引用的版本，可来自多个资料空间
+class RetrievalScopeItem:
+    case_id: str
+    workspace_id: str
+    document_version_id: str
+
+# Document：逻辑文档，同名文件按不可变版本合并
+class Document:
+    id: str
+    workspace_id: str
+    normalized_name: str
+    latest_version_id: Optional[str]
+    deleted_at: Optional[datetime]
+    deleted_by: Optional[str]
 
 # DocumentVersion：文件版本
 class DocumentVersion:
@@ -157,7 +184,7 @@ class Claim:
 # Fact：用户事实
 class Fact:
     id: str
-    workspace_id: str
+    case_id: str
     key: str
     value: str
     source: str  # user_input, document_extracted, clarified
@@ -167,7 +194,7 @@ class Fact:
 # CheckItem：核对清单项
 class CheckItem:
     id: str
-    workspace_id: str
+    case_id: str
     requirement: str
     premise: Optional[str]
     required_facts: List[str]
@@ -179,7 +206,7 @@ class CheckItem:
 # Run：执行记录
 class Run:
     id: str
-    workspace_id: str
+    case_id: str
     query: str
     model_name: str
     retrieval_params: dict
@@ -197,6 +224,18 @@ class ToolEvent:
     duration_ms: int
     timestamp: datetime
 ```
+
+### 资料空间、任务范围与删除状态
+
+- **Workspace** 是所有权、存储与删除的单位；一个用户可以有多个资料空间。
+- **Case** 是一次具体的核对任务，归 owner 所有，拥有事实、结论、清单和检索范围。Case 不随某个 Workspace 级联删除。
+- **RetrievalScopeItem** 固定引用 `document_version_id`，可以来自多个资料空间；首版只允许同一所有者下的跨空间引用，不做跨用户共享。
+- 检索范围是 `RetrievalScopeItem ∩ 有权访问的空间 ∩ 未删除的文档/空间 ∩ 类型与适用范围过滤`，入口是 `retrieve_evidence(case_id, query, filters)`，模型不能传入任意 `workspace_id` 扩大范围。
+- 证据身份使用 `(workspace_id, document_id, version_id, span_id)`；同一空间内同名文件按版本区分，不同空间的同名文件是不同来源，展示时必须带空间名。
+- 删除采用“软删除—保留期—硬删除”。文档软删除后立即从列表、详情和检索中移除，索引条目同时清除；保留期内可恢复。硬删除只保留来源墓碑（文件名、版本、哈希、删除时间），历史 Run 标记来源已删除，不级联删除 Case 或 Run。
+- 文档和空间删除均为所有者操作，删除前展示影响：版本、页面、证据片段、引用它的 Case 和最近 Run。
+
+以下 SQLite 表结构是早期简表，实际实现以 `backend/db/models.py` 为准；新增的 `cases`、`case_scope_items`、`facts`、`check_items`、`runs`、`source_tombstones` 以及 `deleted_at/deleted_by` 字段不在简表中展开。
 
 ### 数据库表设计（SQLite）
 

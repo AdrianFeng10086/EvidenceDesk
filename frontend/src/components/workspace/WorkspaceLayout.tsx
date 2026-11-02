@@ -48,12 +48,12 @@ export function WorkspaceLayout({ workspaceId }: WorkspaceLayoutProps) {
     setActivePanel('docs');
   }, [evidenceTarget, workspaceId]);
 
-  const handleSelectVersion = (versionId: string) => {
-    // 用户主动切换文档时丢弃旧证据目标，避免阅读器被拉回上一份文件
+  const handleSelectVersion = (versionId: string | null) => {
+    // 用户主动切换文档或删除当前文档时丢弃旧证据目标，避免阅读器被拉回旧文件
     clearEvidenceTarget();
     setSelectedVersionId(versionId);
     // 移动端选择文档后直接切到阅读面板；桌面端三栏同时可见，不影响其他面板
-    setActivePanel('docs');
+    if (versionId) setActivePanel('docs');
   };
 
   return (
