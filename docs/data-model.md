@@ -321,8 +321,15 @@ class ToolEvent(BaseModel):
 
 class Run(BaseModel):
     id: str
-    workspace_id: str
+    case_id: str
+    status: str                 # running/succeeded/failed/stale
     query: str = Field(..., min_length=1, max_length=2000)
+    scope_hash: str             # (workspace_id, version_id) 集合指纹
+    scope_snapshot: dict        # 检索时的范围快照
+    index_version: str
+    retrieval_log_id: str
+    stale_at: Optional[datetime] = None
+    stale_reason: Optional[str] = None
     model_name: str
     retrieval_params: dict = Field(default_factory=dict)
     tool_events: List[ToolEvent] = Field(default_factory=list)
@@ -331,19 +338,22 @@ class Run(BaseModel):
     tokens_used: int = Field(..., ge=0)
     cost_estimate: float = Field(..., ge=0)
     created_at: datetime = Field(default_factory=datetime.now)
-    
+
     class Config:
         json_schema_extra = {
             "example": {
                 "id": "run_123",
-                "workspace_id": "ws_abc123",
+                "case_id": "case_abc123",
+                "status": "succeeded",
                 "query": "我是否满足重点项目申报条件？",
+                "scope_hash": "8f14e45f...",
+                "index_version": "v1-63017527058e",
                 "model_name": "deepseek-flash",
                 "retrieval_params": {"top_k": 5, "strategy": "hybrid"},
                 "tool_events": [
                     {
-                        "tool_name": "search_evidence",
-                        "arguments": {"query": "重点项目申报条件"},
+                        "tool_name": "retrieve_evidence",
+                        "arguments": {"case_id": "case_abc123", "query": "重点项目申报条件"},
                         "result": {"evidence_ids": ["ev_span_005", "ev_span_006"]},
                         "duration_ms": 450,
                         "timestamp": "2024-10-22T10:20:01Z"
@@ -713,44 +723,73 @@ CREATE INDEX idx_runs_created ON runs(created_at DESC);
 
 -- Claim 按运行查询
 CREATE INDEX idx_claims_run ON claims(run_id);
+
+-- Day 5 检索表
+CREATE INDEX idx_retrieval_chunks_version
+  ON retrieval_chunks(document_version_id, status);
+CREATE INDEX idx_retrieval_chunks_workspace
+  ON retrieval_chunks(workspace_id, status);
+CREATE INDEX idx_retrieval_chunks_span ON retrieval_chunks(evidence_span_id);
+CREATE INDEX idx_retrieval_logs_case ON retrieval_logs(case_id, created_at);
+CREATE INDEX idx_retrieval_logs_run ON retrieval_logs(run_id);
+-- runs 增加 scope_hash / stale_at / stale_reason / retrieval_log_id
 ```
 
-### Chroma 集合设计
+`retrieval_chunks` 保存检索块到 `evidence_spans.id` 的映射、章节标题、
+绝对字符范围与快照元数据；`retrieval_indexes` 保存索引配置清单；
+`retrieval_logs` 保存每次检索的范围快照、过滤条件、结果、诊断与空结果原因。
+
+### Chroma 集合设计（Day 5 实现）
 
 ```python
-# 每个资料空间一个独立集合
-collection_name = f"workspace_{workspace_id}"
+# 一个全局检索块集合；Case 可以跨资料空间，因此不按 workspace 拆集合。
+# 隔离靠查询时的版本白名单，而不是集合名。
+collection_name = f"evidence_chunks_v1_{index_version}"  # 基础名来自 CHROMA_EVIDENCE_COLLECTION
 
-# Metadata 过滤字段
 metadata_schema = {
-    "document_version_id": str,  # 按文档过滤
-    "page": int,                 # 按页码过滤
-    "upload_source": str,        # 按来源过滤
-    "applicable_scope": str,     # 按适用范围过滤
-    "chunk_type": str            # "paragraph", "sentence", "table"
+    "workspace_id": str,
+    "document_id": str,
+    "document_version_id": str,
+    "evidence_span_id": str,
+    "chunk_index": int,
+    "page": int,
+    "block_index": int,
+    "chunk_type": str,          # paragraph/heading/list_item/table/code
+    "section_title": str,       # 最近一级标题，用于构建时的嵌入上下文
+    "file_suffix": str,
+    "file_version": int,
+    "applicable_scope": str,
+    "upload_source": str,
+    "index_version": str,       # 模型/分块/分词器/融合配置指纹
+    "content_hash": str,
 }
 
-# 插入示例
-collection.add(
-    documents=[span.text for span in evidence_spans],
-    metadatas=[
-        {
-            "document_version_id": span.document_version_id,
-            "page": span.page,
-            "evidence_span_id": span.id
-        }
-        for span in evidence_spans
-    ],
-    ids=[span.id for span in evidence_spans]
+# 插入：向量由 services.embedding 显式计算后传入，Chroma 不调用外部模型
+collection.upsert(
+    ids=[chunk.id for chunk in chunks],
+    documents=[chunk.text for chunk in chunks],
+    embeddings=embeddings,
+    metadatas=[chunk.metadata for chunk in chunks],
 )
 
-# 查询示例
+# 查询：只允许 Case 固定版本，且只使用当前 index_version
 results = collection.query(
-    query_texts=["项目申报条件"],
-    n_results=5,
-    where={"document_version_id": "doc_xyz789"}  # 仅在指定文档中检索
+    query_embeddings=[query_vector],
+    n_results=50,
+    where={
+        "$and": [
+            {"document_version_id": {"$in": scoped_version_ids}},
+            {"index_version": current_index_version},
+        ]
+    },
 )
 ```
+
+SQLite `retrieval_chunks` 保存同一 `chunk_id` 的元数据与到
+`evidence_spans.id` 的映射；`retrieval_indexes` 记录索引配置清单，
+`retrieval_logs` 记录每次检索的范围快照、过滤条件、结果、诊断与空结果原因。
+删除文档时同时删除 Chroma 向量并把块标记为 `deleted`，历史日志读取时
+再按当前来源状态标注“已删除/不可用”。
 
 ## 七、数据迁移与版本管理
 

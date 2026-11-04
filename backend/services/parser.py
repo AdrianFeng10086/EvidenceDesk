@@ -31,8 +31,11 @@ from db.models import (
     DocumentVersion,
     EvidenceSpan,
     ParseJob,
+    RetrievalChunk,
     utcnow,
 )
+from services import vector_store
+from services.indexing import build_version_index
 from services.errors import (
     ERROR_CORRUPTED,
     ERROR_EMPTY_DOCUMENT,
@@ -179,14 +182,23 @@ def run_parse_job(version_id: str, *, force: bool = False) -> str:
         try:
             result = extract_document(Path(version.file_path), version.file_suffix)
 
-            # 进入“索引准备中”。Day 5 会在这里调用向量化与 BM25 建索引；
-            # 首版该阶段仅校验解析产物，因此很快进入 success。
+            # 进入“索引准备中”：分块、向量化并写入 Chroma。
             version.parse_status = "indexing"
+            version.index_status = "indexing"
+            version.index_error_code = None
+            version.index_error = None
             job.status = "indexing"
             db.commit()
 
             _replace_parsed_content(db, version, result)
             db.commit()
+
+            # 索引失败不影响原文解析结果；index_status 会明确标记失败，
+            # 检索返回 INDEX_NOT_READY，用户可重建索引。
+            try:
+                build_version_index(db, version)
+            except Exception:  # noqa: BLE001 — build 已写入失败状态
+                pass
 
             version.parse_status = "success"
             version.support_level = result.support_level
@@ -215,11 +227,26 @@ def _mark_failed(
     code: str,
     message: str,
 ) -> None:
-    # 失败时不保留半成品页面/证据，避免被当成可用原文
+    # 失败时不保留半成品页面/证据/索引，避免被当成可用原文
     db.execute(delete(EvidenceSpan).where(EvidenceSpan.document_version_id == version.id))
     db.execute(delete(DocumentPage).where(DocumentPage.document_version_id == version.id))
+    db.execute(
+        delete(RetrievalChunk).where(
+            RetrievalChunk.document_version_id == version.id
+        )
+    )
+    try:
+        vector_store.delete_version(
+            version.id, index_version=version.index_version
+        )
+    except Exception:  # noqa: BLE001 — 向量库不可用时仍落解析失败状态
+        pass
 
     version.parse_status = "failed"
+    version.index_status = "failed"
+    version.index_error_code = code
+    version.index_error = message
+    version.chunk_count = 0
     version.support_level = "unsupported"
     version.parse_error_code = code
     version.parse_error = message

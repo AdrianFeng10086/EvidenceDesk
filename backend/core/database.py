@@ -56,6 +56,25 @@ def _migrate_schema() -> None:
             ("deleted_at", "DATETIME"),
             ("deleted_by", "VARCHAR(128)"),
         ),
+        "document_versions": (
+            ("index_status", "VARCHAR(24) DEFAULT 'pending'"),
+            ("index_error_code", "VARCHAR(48)"),
+            ("index_error", "TEXT"),
+            ("index_version", "VARCHAR(64)"),
+            ("embedding_model", "VARCHAR(120)"),
+            ("chunk_count", "INTEGER"),
+            ("indexed_at", "DATETIME"),
+        ),
+        "retrieval_chunks": (
+            ("section_title", "TEXT"),
+        ),
+        "runs": (
+            ("scope_hash", "VARCHAR(64)"),
+            ("index_version", "VARCHAR(64)"),
+            ("retrieval_log_id", "VARCHAR(64)"),
+            ("stale_at", "DATETIME"),
+            ("stale_reason", "VARCHAR(64)"),
+        ),
     }
     with engine.begin() as connection:
         for table, additions in columns.items():
@@ -111,6 +130,9 @@ def recover_interrupted_parses() -> List[str]:
             version.support_level = "unsupported"
             version.parse_error_code = "INTERRUPTED"
             version.parse_error = "服务重启导致解析中断，请重新解析"
+            version.index_status = "failed"
+            version.index_error_code = "INTERRUPTED"
+            version.index_error = "服务重启导致索引中断，请重新解析或重建索引"
             touched.append(version.id)
 
             job = db.scalars(

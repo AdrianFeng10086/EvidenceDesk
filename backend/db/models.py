@@ -140,6 +140,17 @@ class DocumentVersion(Base):
     char_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     parsed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
+    # 检索索引状态：pending -> indexing -> ready / failed / deleted
+    index_status: Mapped[str] = mapped_column(
+        String(24), default="pending", nullable=False
+    )
+    index_error_code: Mapped[Optional[str]] = mapped_column(String(48), nullable=True)
+    index_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    index_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    embedding_model: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    chunk_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    indexed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
     document: Mapped["Document"] = relationship(back_populates="versions")
     pages: Mapped[List["DocumentPage"]] = relationship(
         back_populates="version", cascade="all, delete-orphan", order_by="DocumentPage.page_number"
@@ -375,6 +386,12 @@ class Run(Base):
     status: Mapped[str] = mapped_column(String(24), default="running", nullable=False)
     query: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     scope_snapshot: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    # 范围快照指纹；Case 范围变化后旧 Run 标记为 stale
+    scope_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    index_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    retrieval_log_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    stale_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    stale_reason: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
     finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
@@ -406,6 +423,127 @@ class SourceTombstone(Base):
     deleted_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
     deleted_by: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     reason: Mapped[str] = mapped_column(String(48), default="document_deleted", nullable=False)
+
+
+class RetrievalIndex(Base):
+    """索引配置清单。
+
+    index_version 由嵌入模型、维度、分块策略、分词器与融合策略共同决定。
+    配置变化会产生新的 fingerprint，旧版本索引不会再被检索使用。
+    """
+
+    __tablename__ = "retrieval_indexes"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    index_version: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    status: Mapped[str] = mapped_column(String(24), default="ready", nullable=False)
+    embedding_provider: Mapped[str] = mapped_column(String(48), nullable=False)
+    embedding_model: Mapped[str] = mapped_column(String(120), nullable=False)
+    embedding_dimension: Mapped[int] = mapped_column(Integer, nullable=False)
+    chunk_strategy: Mapped[str] = mapped_column(String(48), nullable=False)
+    chunk_max_chars: Mapped[int] = mapped_column(Integer, nullable=False)
+    chunk_overlap_chars: Mapped[int] = mapped_column(Integer, nullable=False)
+    tokenizer_version: Mapped[str] = mapped_column(String(48), nullable=False)
+    fusion_strategy: Mapped[str] = mapped_column(String(48), nullable=False)
+    chunk_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    version_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    config: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utcnow, onupdate=utcnow, nullable=False
+    )
+
+
+class RetrievalChunk(Base):
+    """可检索文本块，稳定映射回不可变 EvidenceSpan。
+
+    一个 EvidenceSpan 可能被切成多个检索块；每个块保留其在页面文本中的
+    绝对字符范围，以及所属 span 的范围。chunk.id 在相同版本、span、序号
+    与文本内容下保持稳定，重复建索引不会改变检索结果里的 ID。
+    """
+
+    __tablename__ = "retrieval_chunks"
+    __table_args__ = (
+        Index("idx_retrieval_chunks_version", "document_version_id", "status"),
+        Index("idx_retrieval_chunks_workspace", "workspace_id", "status"),
+        Index("idx_retrieval_chunks_span", "evidence_span_id"),
+        Index("idx_retrieval_chunks_index", "index_version", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    index_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    workspace_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    document_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    document_version_id: Mapped[str] = mapped_column(
+        String(64), nullable=False, index=True
+    )
+    evidence_span_id: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    workspace_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    document_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_suffix: Mapped[str] = mapped_column(String(16), nullable=False)
+    file_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    applicable_scope: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    upload_source: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+
+    chunk_index: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    chunk_type: Mapped[str] = mapped_column(String(32), default="paragraph", nullable=False)
+    # 最近一级标题，用于检索时补足片段缺失的上下文
+    section_title: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    page: Mapped[int] = mapped_column(Integer, nullable=False)
+    block_index: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    # 页面文本中的绝对字符范围
+    char_start: Mapped[int] = mapped_column(Integer, nullable=False)
+    char_end: Mapped[int] = mapped_column(Integer, nullable=False)
+    # 所属 EvidenceSpan 的范围
+    span_char_start: Mapped[int] = mapped_column(Integer, nullable=False)
+    span_char_end: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    status: Mapped[str] = mapped_column(String(24), default="active", nullable=False)
+    embedding_model: Mapped[str] = mapped_column(String(120), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utcnow, onupdate=utcnow, nullable=False
+    )
+
+
+class RetrievalLog(Base):
+    """一次检索的完整记录：范围快照、过滤条件、结果与空结果原因。"""
+
+    __tablename__ = "retrieval_logs"
+    __table_args__ = (
+        Index("idx_retrieval_logs_case", "case_id", "created_at"),
+        Index("idx_retrieval_logs_run", "run_id"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(64), primary_key=True, default=lambda: new_id("rlog")
+    )
+    case_id: Mapped[Optional[str]] = mapped_column(
+        String(64), ForeignKey("cases.id", ondelete="SET NULL"), nullable=True
+    )
+    run_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    owner_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    query: Mapped[str] = mapped_column(Text, nullable=False)
+    filters: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    scope_snapshot: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    scope_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    status: Mapped[str] = mapped_column(String(24), default="ok", nullable=False)
+    empty_reason: Mapped[Optional[str]] = mapped_column(String(48), nullable=True)
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    result_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    counts: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    results: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    diagnostics: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    config_snapshot: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    index_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    error_code: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
 
 
 # ---------------------------------------------------------------------------

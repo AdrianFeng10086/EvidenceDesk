@@ -5,6 +5,7 @@ import {
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Crosshair,
@@ -538,6 +539,7 @@ function ViewerBody({
 }) {
   const version = detail.version;
   const locate = useEvidenceLocator((state) => state.locate);
+  const [warningsExpanded, setWarningsExpanded] = useState(false);
 
   if (version.parse_status === 'failed') {
     return (
@@ -709,19 +711,43 @@ function ViewerBody({
       {target && <EvidenceContext target={target} />}
 
       {restrictedWarnings.length > 0 && (
-        <div className="flex flex-shrink-0 items-start gap-2 border-b border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800 sm:px-4">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
-          <div className="min-w-0 space-y-0.5">
-            <div className="font-medium">
-              受限解析：{supportLevelLabel(version.support_level)}，请人工核对文字框
+        <div className="flex-shrink-0 border-b border-amber-200 bg-amber-50 text-[11px] leading-relaxed text-amber-800">
+          <button
+            type="button"
+            onClick={() => setWarningsExpanded((expanded) => !expanded)}
+            aria-expanded={warningsExpanded}
+            className="flex w-full items-start gap-2 px-3 py-2 text-left transition-colors hover:bg-amber-100/60 sm:px-4"
+          >
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+            <span className="min-w-0 flex-1">
+              <span className="font-medium">
+                受限解析：{supportLevelLabel(version.support_level)}，请人工核对文字框
+              </span>
+              <span className="ml-1 text-amber-700/80">
+                · {restrictedWarnings.length} 条提示
+              </span>
+            </span>
+            <ChevronDown
+              aria-hidden="true"
+              className={cn(
+                'mt-0.5 h-3.5 w-3.5 flex-shrink-0 transition-transform',
+                warningsExpanded && 'rotate-180'
+              )}
+            />
+            <span className="sr-only">
+              {warningsExpanded ? '收起受限解析提示' : '展开受限解析提示'}
+            </span>
+          </button>
+          {warningsExpanded && (
+            <div className="space-y-0.5 border-t border-amber-200/70 px-3 pb-2 pt-1.5 pl-8 sm:px-4 sm:pl-9">
+              {restrictedWarnings.map((warning, index) => (
+                <div key={`${warning.code}-${warning.page ?? 'doc'}-${index}`}>
+                  {warning.code}
+                  {warning.page ? `（第 ${warning.page} 页）` : ''} · {warning.message}
+                </div>
+              ))}
             </div>
-            {restrictedWarnings.map((warning, index) => (
-              <div key={`${warning.code}-${warning.page ?? 'doc'}-${index}`}>
-                {warning.code}
-                {warning.page ? `（第 ${warning.page} 页）` : ''} · {warning.message}
-              </div>
-            ))}
-          </div>
+          )}
         </div>
       )}
 

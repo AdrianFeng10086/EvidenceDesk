@@ -16,7 +16,7 @@ from fastapi import Request
 from sqlalchemy.orm import Session
 
 from core.config import get_settings
-from db.models import Document, DocumentVersion, Workspace
+from db.models import Case, Document, DocumentVersion, Workspace
 from services.errors import ForbiddenError, NotFoundError
 
 
@@ -106,4 +106,39 @@ def require_version_access(
             details={"version_id": version_id},
         )
     workspace = require_workspace_access(db, version.workspace_id, principal)
+    return version, document, workspace
+
+
+def require_case_access(db: Session, case_id: str, principal: Principal) -> Case:
+    case = db.get(Case, case_id)
+    if case is None:
+        raise NotFoundError("事项不存在", details={"case_id": case_id})
+    if case.owner_id != principal.id:
+        raise ForbiddenError(
+            "当前访问主体不是该事项的所有者",
+            code="CASE_FORBIDDEN",
+            details={"case_id": case_id},
+        )
+    return case
+
+
+def require_scope_version_access(
+    db: Session,
+    workspace_id: str,
+    document_version_id: str,
+    principal: Principal,
+) -> tuple[DocumentVersion, Document, Workspace]:
+    """校验要加入 Case 范围的版本确实属于可用空间，且版本与空间一致。"""
+    version, document, workspace = require_version_access(
+        db, document_version_id, principal
+    )
+    if version.workspace_id != workspace_id:
+        raise NotFoundError(
+            "文档版本不属于该资料空间",
+            code="VERSION_WORKSPACE_MISMATCH",
+            details={
+                "workspace_id": workspace_id,
+                "document_version_id": document_version_id,
+            },
+        )
     return version, document, workspace

@@ -26,6 +26,16 @@ os.environ["MAX_PDF_SIZE_MB"] = "10"
 os.environ["MAX_PDF_PAGES"] = "30"
 os.environ["MAX_DOCUMENTS_PER_WORKSPACE"] = "10"
 
+# 检索测试使用确定性本地向量与独立 Chroma 目录，不依赖外部模型网络
+os.environ["EMBEDDING_PROVIDER"] = "local"
+os.environ["EMBEDDING_MODEL"] = "local-hash-v1"
+os.environ["EMBEDDING_DIMENSION"] = "256"
+os.environ["CHROMA_PERSIST_DIR"] = str(TEST_ROOT / "chroma")
+os.environ["CHROMA_EVIDENCE_COLLECTION"] = "evidence_chunks_test"
+os.environ["RETRIEVAL_TOP_K"] = "5"
+os.environ["RETRIEVAL_CANDIDATE_K"] = "50"
+os.environ["INDEX_BACKFILL_ON_STARTUP"] = "false"
+
 
 @pytest.fixture(scope="session")
 def client():

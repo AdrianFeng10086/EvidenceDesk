@@ -489,17 +489,28 @@ data: {"type":"run_finished","run_id":"run_123","summary":{"claims_count":3,"evi
 ```python
 tools = [
     {
-        "name": "search_evidence",
-        "description": "在资料空间中检索相关证据片段",
+        "name": "retrieve_evidence",
+        "description": "在 Case 固定范围内检索相关证据片段（可跨资料空间）",
         "parameters": {
             "type": "object",
             "properties": {
+                "case_id": {"type": "string"},
                 "query": {"type": "string"},
-                "workspace_id": {"type": "string"},
-                "document_ids": {"type": "array", "items": {"type": "string"}},
+                "filters": {
+                    "type": "object",
+                    "properties": {
+                        "workspace_ids": {"type": "array", "items": {"type": "string"}},
+                        "document_version_ids": {"type": "array", "items": {"type": "string"}},
+                        "document_ids": {"type": "array", "items": {"type": "string"}},
+                        "file_suffixes": {"type": "array", "items": {"type": "string"}},
+                        "chunk_types": {"type": "array", "items": {"type": "string"}},
+                        "applicable_scopes": {"type": "array", "items": {"type": "string"}},
+                        "deletion_status": {"type": "string", "enum": ["active", "deleted", "all"]}
+                    }
+                },
                 "top_k": {"type": "integer", "default": 5}
             },
-            "required": ["query", "workspace_id"]
+            "required": ["case_id", "query"]
         }
     },
     {
@@ -720,7 +731,7 @@ const height_px = box.height * currentHeight;
 ├── db/
 │   └── evidence.db          # SQLite 数据库
 ├── chroma/
-│   └── workspace_*/         # 向量索引（按空间隔离）
+│   └── evidence_chunks_v1_<index_version>/  # 检索块向量；按 Case 版本白名单查询
 └── uploads/
     └── workspace_*/         # 上传文件（按空间隔离）
         └── document_*/
@@ -737,7 +748,7 @@ const height_px = box.height * currentHeight;
 
 1. **资料空间隔离**：每个 workspace 有独立 owner_id
 2. **文档版本追溯**：所有证据关联 document_version_id
-3. **检索范围限制**：查询前验证 workspace_id
+3. **检索范围限制**：入口为 `retrieve_evidence(case_id)`；向量查询只使用 Case 固定引用的 `document_version_id` 白名单，模型不能传入任意 `workspace_id` 扩大范围
 4. **API 密钥**：密钥只存在服务端，前端不可见
 5. **评审账号**：演示账号只能访问公开样例
 

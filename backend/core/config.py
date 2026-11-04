@@ -36,6 +36,13 @@ def _env_bool(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, str(default)))
+    except ValueError:
+        return default
+
+
 def _resolve_path(raw: str, default: str) -> Path:
     path = Path(raw or default)
     if not path.is_absolute():
@@ -79,6 +86,23 @@ class Settings:
 
     cors_origins: list[str]
 
+    # 检索与索引配置（Day 5）
+    embedding_provider: str
+    embedding_model: str
+    embedding_dimension: int
+    embedding_batch_size: int
+    chroma_persist_dir: Path
+    chroma_collection: str
+    chunk_max_chars: int
+    chunk_overlap_chars: int
+    retrieval_default_top_k: int
+    retrieval_candidate_k: int
+    retrieval_rrf_k: int
+    retrieval_vector_weight: float
+    retrieval_keyword_weight: float
+    retrieval_min_vector_similarity: float
+    retrieval_max_candidates: int
+
     @property
     def max_upload_size_bytes(self) -> int:
         return self.max_upload_size_mb * 1024 * 1024
@@ -97,6 +121,10 @@ def get_settings() -> Settings:
     data_dir = _resolve_path(os.getenv("DATA_DIR", "./data"), "./data")
     upload_dir = _resolve_path(os.getenv("UPLOAD_DIR", "./data/uploads"), "./data/uploads")
     upload_dir.mkdir(parents=True, exist_ok=True)
+    chroma_dir = _resolve_path(
+        os.getenv("CHROMA_PERSIST_DIR", "./data/chroma"), "./data/chroma"
+    )
+    chroma_dir.mkdir(parents=True, exist_ok=True)
 
     raw_db = os.getenv("DATABASE_URL", "sqlite:///./data/db/evidence.db")
     database_url = _sqlite_url(raw_db)
@@ -111,7 +139,7 @@ def get_settings() -> Settings:
 
     return Settings(
         app_name="有据工作台后端",
-        app_version="0.2.0",
+        app_version="0.4.0",
         database_url=database_url,
         upload_dir=upload_dir,
         data_dir=data_dir,
@@ -125,6 +153,26 @@ def get_settings() -> Settings:
         demo_workspace_name=os.getenv("DEMO_WORKSPACE_NAME", "演示资料空间"),
         demo_user_id=os.getenv("DEMO_USER_ID", "demo_user"),
         cors_origins=cors,
+        embedding_provider=os.getenv("EMBEDDING_PROVIDER", "cloudflare").strip().lower(),
+        embedding_model=os.getenv("EMBEDDING_MODEL", "@cf/qwen/qwen3-embedding-0.6b"),
+        embedding_dimension=_env_int("EMBEDDING_DIMENSION", 1024),
+        embedding_batch_size=_env_int("EMBEDDING_BATCH_SIZE", 100),
+        chroma_persist_dir=chroma_dir,
+        chroma_collection=os.getenv(
+            "CHROMA_EVIDENCE_COLLECTION", "evidence_chunks_v1"
+        ).strip()
+        or "evidence_chunks_v1",
+        chunk_max_chars=_env_int("CHUNK_MAX_CHARS", 480),
+        chunk_overlap_chars=_env_int("CHUNK_OVERLAP_CHARS", 60),
+        retrieval_default_top_k=_env_int("RETRIEVAL_TOP_K", 5),
+        retrieval_candidate_k=_env_int("RETRIEVAL_CANDIDATE_K", 50),
+        retrieval_rrf_k=_env_int("RETRIEVAL_RRF_K", 60),
+        retrieval_vector_weight=_env_float("RETRIEVAL_VECTOR_WEIGHT", 1.0),
+        retrieval_keyword_weight=_env_float("RETRIEVAL_KEYWORD_WEIGHT", 1.0),
+        retrieval_min_vector_similarity=_env_float(
+            "RETRIEVAL_MIN_VECTOR_SIMILARITY", 0.25
+        ),
+        retrieval_max_candidates=_env_int("RETRIEVAL_MAX_CANDIDATES", 5000),
     )
 
 

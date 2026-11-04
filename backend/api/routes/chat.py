@@ -13,7 +13,7 @@ Day 2 范围：
 import json
 import time
 import uuid
-from typing import Any, AsyncIterator, Dict, List
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
@@ -21,9 +21,15 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from core.database import SessionLocal, get_db
-from services.access import Principal, get_principal, require_workspace_access
+from services.access import (
+    Principal,
+    get_principal,
+    require_case_access,
+    require_workspace_access,
+)
 from services.evidence_search import search_workspace_evidence
 from services.llm import default_params, get_async_llm_client, llm_model
+from services.retrieval import retrieve_evidence
 
 router = APIRouter()
 
@@ -35,6 +41,8 @@ class ChatMessage(BaseModel):
 
 class ChatStreamRequest(BaseModel):
     workspace_id: str
+    # 提供 case_id 时使用 Case 固定范围检索；否则保留空间级关键词召回
+    case_id: Optional[str] = None
     messages: List[ChatMessage]
 
 
@@ -46,11 +54,42 @@ def _sse(event: str, data: Dict[str, Any]) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
-def _search_evidence(workspace_id: str, query: str) -> Dict[str, Any]:
-    """返回资料空间中真实存在的证据片段。
+def _search_evidence(
+    workspace_id: str,
+    query: str,
+    *,
+    case_id: Optional[str],
+    principal: Principal,
+) -> Dict[str, Any]:
+    """返回真实证据片段。
 
-    使用独立短会话，避免把长时间运行的 SSE 生成器绑定在请求级 Session 上。
+    有 case_id 时走 Case 固定范围检索（可跨空间）；否则保留空间级关键词
+    召回以兼容现有前端。使用独立短会话，避免绑定长时间运行的 SSE 连接。
     """
+    if case_id:
+        with SessionLocal() as db:
+            retrieval = retrieve_evidence(
+                db,
+                case_id=case_id,
+                principal=principal,
+                query=query,
+                top_k=5,
+                record_run=True,
+            )
+        return {
+            "tool_name": "retrieve_evidence",
+            "arguments": {"query": query, "case_id": case_id},
+            "result": {
+                "is_sample": False,
+                "note": retrieval["note"],
+                "status": retrieval["status"],
+                "empty_reason": retrieval["empty_reason"],
+                "retrieval_log_id": retrieval["retrieval_log_id"],
+                "run_id": retrieval["run_id"],
+                "evidence_spans": retrieval["results"],
+            },
+        }
+
     with SessionLocal() as db:
         spans = search_workspace_evidence(db, workspace_id, query, limit=5)
 
@@ -80,7 +119,9 @@ def _evidence_claim(evidence_result: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-async def _stream_chat(req: ChatStreamRequest, request: Request) -> AsyncIterator[str]:
+async def _stream_chat(
+    req: ChatStreamRequest, request: Request, principal: Principal
+) -> AsyncIterator[str]:
     run_id = f"run_{uuid.uuid4().hex[:12]}"
     model = llm_model()
 
@@ -123,7 +164,12 @@ async def _stream_chat(req: ChatStreamRequest, request: Request) -> AsyncIterato
             return
 
         # 首版关键词召回：返回真实 EvidenceSpan（含版本、坐标与上下文）。
-        tool_call = _search_evidence(req.workspace_id, last_user_message)
+        tool_call = _search_evidence(
+            req.workspace_id,
+            last_user_message,
+            case_id=req.case_id,
+            principal=principal,
+        )
         yield _sse(
             "tool_started",
             {
@@ -189,9 +235,11 @@ async def chat_stream(
 ) -> StreamingResponse:
     # 所有权校验入口：即使首版只有演示账户，也不允许跨资料空间提问
     require_workspace_access(db, req.workspace_id, principal)
+    if req.case_id:
+        require_case_access(db, req.case_id, principal)
 
     return StreamingResponse(
-        _stream_chat(req, request),
+        _stream_chat(req, request, principal),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

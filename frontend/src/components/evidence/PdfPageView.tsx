@@ -135,7 +135,6 @@ export function PdfPageView({
     let cancelled = false;
     let renderTask: RenderTask | null = null;
 
-    setMetrics(null);
     setLoading(true);
     setError(null);
 
@@ -151,10 +150,22 @@ export function PdfPageView({
 
         const outputScale =
           typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
-        canvas.width = Math.max(1, Math.floor(viewport.width * outputScale));
-        canvas.height = Math.max(1, Math.floor(viewport.height * outputScale));
-        canvas.style.width = `${viewport.width}px`;
-        canvas.style.height = `${viewport.height}px`;
+        const pixelWidth = Math.max(1, Math.floor(viewport.width * outputScale));
+        const pixelHeight = Math.max(
+          1,
+          Math.floor(viewport.height * outputScale)
+        );
+
+        // 先渲染到离屏 canvas，渲染完成后再一次性贴到可见 canvas。
+        // 直接改可见 canvas 的尺寸会立刻清空画面，翻页/缩放/面板宽度变化时
+        // 就会出现「白屏 → 重绘」的闪烁。
+        const renderCanvas = document.createElement('canvas');
+        renderCanvas.width = pixelWidth;
+        renderCanvas.height = pixelHeight;
+        const renderContext = renderCanvas.getContext('2d');
+        if (!renderContext) {
+          throw new Error('无法创建 PDF 渲染画布');
+        }
 
         const transform: [number, number, number, number, number, number] =
           outputScale === 1
@@ -162,13 +173,19 @@ export function PdfPageView({
             : [outputScale, 0, 0, outputScale, 0, 0];
 
         renderTask = page.render({
-          canvasContext: context,
+          canvasContext: renderContext,
           viewport,
           transform,
         });
         await renderTask.promise;
 
         if (cancelled) return;
+
+        canvas.width = pixelWidth;
+        canvas.height = pixelHeight;
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
+        context.drawImage(renderCanvas, 0, 0);
 
         setMetrics({
           width: viewport.width,
@@ -210,9 +227,11 @@ export function PdfPageView({
   };
 
   return (
+    // scrollbar-gutter 固定预留滚动条宽度：否则内容从无到有时出现滚动条，
+    // 会使 clientWidth 变化并触发 ResizeObserver，形成「重渲染 ↔ 滚动条」死循环。
     <div
       ref={scrollRef}
-      className="relative min-h-0 flex-1 overflow-auto bg-slate-200/70 p-4"
+      className="relative min-h-0 flex-1 overflow-auto bg-slate-200/70 p-4 [scrollbar-gutter:stable]"
     >
       {error ? (
         <div className="mx-auto max-w-md rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 shadow-sm">

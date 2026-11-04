@@ -10,10 +10,15 @@
     {"result": {"data": [[...], [...]], "shape": [2, 1024]}, "success": true, "errors": []}
 """
 
+import hashlib
+import math
 import os
+from collections import Counter
 from typing import Any, Dict, List, Optional
 
 import httpx
+
+from services.tokenizer import tokenize
 
 CLOUDFLARE_API_BASE = "https://api.cloudflare.com/client/v4/accounts"
 
@@ -165,11 +170,134 @@ except ImportError:  # 未安装 chromadb 时，仅提供纯 HTTP 客户端
     pass
 
 
+class LocalHashEmbedding:
+    """确定性本地哈希向量。
+
+    只用于开发/测试或无外部模型凭据时的降级路径。它把中文单字、二元组
+    与英文词项哈希到固定维度，能保证“同一文本得到同一向量”，便于离线
+    验证索引与检索链路；语义泛化能力弱于真实嵌入模型。
+    """
+
+    provider = "local"
+
+    def __init__(self, dimension: int = 1024, model: str = "local-hash-v1"):
+        self.dimension = int(dimension)
+        self.model = model
+
+    def embed(self, texts: List[str]) -> List[List[float]]:
+        return [self._embed_one(text) for text in texts]
+
+    def embed_one(self, text: str) -> List[float]:
+        return self._embed_one(text)
+
+    async def aembed(self, texts: List[str]) -> List[List[float]]:
+        return self.embed(texts)
+
+    async def aembed_one(self, text: str) -> List[float]:
+        return self.embed_one(text)
+
+    def _embed_one(self, text: str) -> List[float]:
+        vector = [0.0] * self.dimension
+        counts = Counter(tokenize(text))
+        for token, count in counts.items():
+            digest = hashlib.blake2b(token.encode("utf-8"), digest_size=8).digest()
+            value = int.from_bytes(digest, "big")
+            index = value % self.dimension
+            sign = 1.0 if (value >> 63) & 1 else -1.0
+            # 次线性词频，避免长文本被重复词项主导
+            vector[index] += sign * (1.0 + math.log(count))
+
+        norm = math.sqrt(sum(value * value for value in vector))
+        if norm == 0:
+            vector[0] = 1.0
+            return vector
+        return [value / norm for value in vector]
+
+
+EmbeddingBackend = Any
+
+
+def get_embedding_backend() -> EmbeddingBackend:
+    """按配置返回嵌入后端。
+
+    - local/hash: 本地确定性向量，离线可用
+    - cloudflare: Cloudflare Workers AI（需要账户 ID 与 Token）
+    - sentence-transformers: 可选本地模型（若安装）
+    """
+    from core.config import get_settings
+
+    settings = get_settings()
+    provider = (settings.embedding_provider or "cloudflare").strip().lower()
+    model = settings.embedding_model
+    dimension = settings.embedding_dimension
+
+    if provider in {"local", "hash", "dev", "offline"}:
+        return LocalHashEmbedding(dimension=dimension, model="local-hash-v1")
+
+    if provider in {"cloudflare", "cf", "workers-ai"}:
+        return CloudflareEmbedding(
+            model=model,
+            dimension=dimension,
+            batch_size=settings.embedding_batch_size,
+        )
+
+    if provider in {"sentence-transformers", "sentence_transformers", "st"}:
+        from sentence_transformers import SentenceTransformer
+
+        class _SentenceTransformerBackend:
+            provider = "sentence-transformers"
+
+            def __init__(self) -> None:
+                self.model = model
+                self._model = SentenceTransformer(model)
+
+            def embed(self, texts: List[str]) -> List[List[float]]:
+                vectors = self._model.encode(texts, normalize_embeddings=True)
+                return [list(map(float, vector)) for vector in vectors]
+
+            def embed_one(self, text: str) -> List[float]:
+                return self.embed([text])[0]
+
+            async def aembed(self, texts: List[str]) -> List[List[float]]:
+                return self.embed(texts)
+
+            async def aembed_one(self, text: str) -> List[float]:
+                return self.embed_one(text)
+
+        return _SentenceTransformerBackend()
+
+    raise EmbeddingError(f"未知的 EMBEDDING_PROVIDER: {provider}")
+
+
+_current_backend: Optional[EmbeddingBackend] = None
+
+
+def get_current_embedding_backend() -> EmbeddingBackend:
+    """进程内复用嵌入后端（配置变化后重启生效）。"""
+    global _current_backend
+    if _current_backend is None:
+        _current_backend = get_embedding_backend()
+    return _current_backend
+
+
+def reset_embedding_backend() -> None:
+    global _current_backend
+    _current_backend = None
+
+
+def embed_texts(texts: List[str]) -> List[List[float]]:
+    return get_current_embedding_backend().embed(texts)
+
+
+def embed_query(text: str) -> List[float]:
+    return get_current_embedding_backend().embed_one(text)
+
+
 _default_client: Optional[CloudflareEmbedding] = None
 
 
 def get_embedding_client() -> CloudflareEmbedding:
-    """获取全局共享的向量化客户端（按环境变量初始化）"""
+    """获取全局共享的 Cloudflare 向量化客户端（按环境变量初始化）"""
     global _default_client
     if _default_client is None:
         _default_client = CloudflareEmbedding()

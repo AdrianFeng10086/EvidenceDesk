@@ -44,6 +44,13 @@ export interface DocumentVersion {
   page_count?: number | null;
   char_count?: number | null;
   parsed_at?: string | null;
+  index_status?: 'pending' | 'indexing' | 'ready' | 'failed' | 'deleted';
+  index_error_code?: string | null;
+  index_error?: string | null;
+  index_version?: string | null;
+  embedding_model?: string | null;
+  chunk_count?: number | null;
+  indexed_at?: string | null;
 }
 
 export interface DocumentSummary {

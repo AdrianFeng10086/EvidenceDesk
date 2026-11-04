@@ -1,0 +1,2108 @@
+{
+  "dataset": "day5-dev-v1",
+  "generated_at": "2026-11-03T13:41:52Z",
+  "k": 5,
+  "config": {
+    "index_version": "v1-63017527058e",
+    "embedding_provider": "cloudflare",
+    "embedding_model": "@cf/baai/bge-m3",
+    "embedding_dimension": 1024,
+    "chunk_strategy": "evidence_span_window_section_v2",
+    "chunk_max_chars": 480,
+    "chunk_overlap_chars": 60,
+    "tokenizer_version": "cjk-uni-bigram-v1",
+    "fusion_strategy": "rrf_v1",
+    "schema_version": "retrieval-index-v1"
+  },
+  "runtime": {
+    "embedding_provider": "cloudflare",
+    "embedding_model": "@cf/baai/bge-m3",
+    "embedding_dimension": 1024,
+    "chroma_collection": "evidence_chunks_eval_v1_63017527058e"
+  },
+  "summary": {
+    "question_count": 24,
+    "fused_hit_at_1": 0.5416666666666666,
+    "fused_hit_at_5": 1.0,
+    "fused_mrr": 0.7354166666666666,
+    "vector_hit_at_1": 0.4166666666666667,
+    "vector_hit_at_5": 0.875,
+    "vector_mrr": 0.6145833333333334,
+    "empty_reason_counts": {
+      "OK": 24
+    }
+  },
+  "per_example": {
+    "expense-reimbursement": {
+      "question_count": 8,
+      "fused_hit_at_1": 0.5,
+      "fused_hit_at_5": 1.0,
+      "fused_mrr": 0.68125,
+      "vector_hit_at_1": 0.375,
+      "vector_hit_at_5": 0.75,
+      "vector_mrr": 0.5416666666666666
+    },
+    "project-application": {
+      "question_count": 8,
+      "fused_hit_at_1": 0.625,
+      "fused_hit_at_5": 1.0,
+      "fused_mrr": 0.8125,
+      "vector_hit_at_1": 0.5,
+      "vector_hit_at_5": 1.0,
+      "vector_mrr": 0.7291666666666666
+    },
+    "warranty-service": {
+      "question_count": 8,
+      "fused_hit_at_1": 0.5,
+      "fused_hit_at_5": 1.0,
+      "fused_mrr": 0.7125,
+      "vector_hit_at_1": 0.375,
+      "vector_hit_at_5": 0.875,
+      "vector_mrr": 0.5729166666666666
+    }
+  },
+  "questions": [
+    {
+      "example": "expense-reimbursement",
+      "id": "expense-dev-1",
+      "question": "员工手机话费补贴的上限是多少？",
+      "expected_terms": [
+        "每月手机补贴上限",
+        "手机补贴上限"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 1,
+      "vector_baseline_hit_rank": 1,
+      "top_k": [
+        {
+          "chunk_id": "chk_c620ffaae981517c8c2af81a198c7272a30543e4",
+          "evidence_span_id": "span_006890d7f5e44ec6a92e07901bac66fb",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 差旅费：交通费、住宿费、餐补。\n2. 办公费：文具、打印、快递。\n3. 通讯费：每月手机补贴上限 200 元。\n4. 业务招待费：需事前审批，单次上限 500 元。",
+          "scores": {
+            "fused": 0.03278689,
+            "vector_similarity": 0.661021,
+            "vector_rank": 1,
+            "keyword": 49.927132,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_c285fba23919503658badf8ba33db45d1250aa3b",
+          "evidence_span_id": "span_8be6d6d565d846a3aeb83f71eb75bdb3",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "# 演示规则：员工费用报销管理办法",
+          "scores": {
+            "fused": 0.03128055,
+            "vector_similarity": 0.56882,
+            "vector_rank": 6,
+            "keyword": 36.687986,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_c64ff8e051a2c39ced844311a396a8d958d5e822",
+          "evidence_span_id": "span_c7d5d19571474226b3bc0b2c86e6c8e9",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "| 单笔金额 | 审批人 |\n| --- | --- |\n| 500 元以内 | 部门经理 |\n| 500 元至 2000 元 | 部门总监 |\n| 2000 元以上 | 财务总监 |",
+          "scores": {
+            "fused": 0.03079839,
+            "vector_similarity": 0.595615,
+            "vector_rank": 3,
+            "keyword": 30.711499,
+            "keyword_rank": 7
+          }
+        },
+        {
+          "chunk_id": "chk_7a887c622441882402ed9862336bcdda94291331",
+          "evidence_span_id": "span_de9431fbe8c24154b8e3751c37a7d281",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 交通费：实报实销，优先选择经济舱或二等座。\n2. 住宿费：\n   - 经理级及以上：每晚不超过 600 元。\n   - 普通员工：每晚不超过 400 元。\n3. 餐补：每天 80 元，无需发票。",
+          "scores": {
+            "fused": 0.0305789,
+            "vector_similarity": 0.547001,
+            "vector_rank": 8,
+            "keyword": 35.453912,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_681a6a754763ec327cca9d4d9bac7d5be0d68b9c",
+          "evidence_span_id": "span_af6147ec83c1426ea0da0a1e35eed027",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "### 差旅费标准",
+          "scores": {
+            "fused": 0.03011775,
+            "vector_similarity": 0.592182,
+            "vector_rank": 4,
+            "keyword": 30.044585,
+            "keyword_rank": 9
+          }
+        }
+      ]
+    },
+    {
+      "example": "expense-reimbursement",
+      "id": "expense-dev-2",
+      "question": "出差住宿费的报销标准是什么？",
+      "expected_terms": [
+        "住宿费",
+        "每晚不超过"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 2,
+      "vector_baseline_hit_rank": 2,
+      "top_k": [
+        {
+          "chunk_id": "chk_f4b65076745dca35c372471a3c24478509d73990",
+          "evidence_span_id": "span_e1aa79e166a740af918847edbaaa0a92",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "## 二、报销标准",
+          "scores": {
+            "fused": 0.03226646,
+            "vector_similarity": 0.653976,
+            "vector_rank": 3,
+            "keyword": 38.070617,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_7a887c622441882402ed9862336bcdda94291331",
+          "evidence_span_id": "span_de9431fbe8c24154b8e3751c37a7d281",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 交通费：实报实销，优先选择经济舱或二等座。\n2. 住宿费：\n   - 经理级及以上：每晚不超过 600 元。\n   - 普通员工：每晚不超过 400 元。\n3. 餐补：每天 80 元，无需发票。",
+          "scores": {
+            "fused": 0.03225806,
+            "vector_similarity": 0.698735,
+            "vector_rank": 2,
+            "keyword": 35.790127,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_681a6a754763ec327cca9d4d9bac7d5be0d68b9c",
+          "evidence_span_id": "span_af6147ec83c1426ea0da0a1e35eed027",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "### 差旅费标准",
+          "scores": {
+            "fused": 0.03201844,
+            "vector_similarity": 0.732139,
+            "vector_rank": 1,
+            "keyword": 33.696177,
+            "keyword_rank": 4
+          }
+        },
+        {
+          "chunk_id": "chk_c620ffaae981517c8c2af81a198c7272a30543e4",
+          "evidence_span_id": "span_006890d7f5e44ec6a92e07901bac66fb",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 差旅费：交通费、住宿费、餐补。\n2. 办公费：文具、打印、快递。\n3. 通讯费：每月手机补贴上限 200 元。\n4. 业务招待费：需事前审批，单次上限 500 元。",
+          "scores": {
+            "fused": 0.03149802,
+            "vector_similarity": 0.645929,
+            "vector_rank": 4,
+            "keyword": 34.371823,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_99e10ff3207aea765b61bb2acd7d73b991eda020",
+          "evidence_span_id": "span_e437ceab3da1412eab3341942e80bced",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "### 可报销费用",
+          "scores": {
+            "fused": 0.0300905,
+            "vector_similarity": 0.63815,
+            "vector_rank": 5,
+            "keyword": 28.514568,
+            "keyword_rank": 8
+          }
+        }
+      ]
+    },
+    {
+      "example": "expense-reimbursement",
+      "id": "expense-dev-3",
+      "question": "2000 元的办公用品采购需要谁审批？",
+      "expected_terms": [
+        "2000 元以上",
+        "财务总监"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 2,
+      "vector_baseline_hit_rank": 2,
+      "top_k": [
+        {
+          "chunk_id": "chk_4305b2a62cb025c006e95b1c7b08796e710ce75a",
+          "evidence_span_id": "span_6fd5a8467c924affab06549474287589",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "### 办公费审批标准",
+          "scores": {
+            "fused": 0.03252247,
+            "vector_similarity": 0.729837,
+            "vector_rank": 1,
+            "keyword": 40.063218,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_c64ff8e051a2c39ced844311a396a8d958d5e822",
+          "evidence_span_id": "span_c7d5d19571474226b3bc0b2c86e6c8e9",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "| 单笔金额 | 审批人 |\n| --- | --- |\n| 500 元以内 | 部门经理 |\n| 500 元至 2000 元 | 部门总监 |\n| 2000 元以上 | 财务总监 |",
+          "scores": {
+            "fused": 0.03252247,
+            "vector_similarity": 0.675673,
+            "vector_rank": 2,
+            "keyword": 41.832813,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_07ab514f987efa41ba4942aeeb4ee9b787449832",
+          "evidence_span_id": "span_b81fda6a4bb4477a9fda42a6f783eb18",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 紧急采购：可事后补审批，但需说明理由。\n2. 跨年报销：上一年度费用原则上不再受理。\n3. 外币报销：按报销日汇率折算。\n4. 丢失发票：需提供情况说明和其他证明材料。",
+          "scores": {
+            "fused": 0.03100962,
+            "vector_similarity": 0.541385,
+            "vector_rank": 5,
+            "keyword": 36.671157,
+            "keyword_rank": 4
+          }
+        },
+        {
+          "chunk_id": "chk_6b19a52151f4bedec5e36c21ea4c96ff13032ee3",
+          "evidence_span_id": "span_0b228c0e0ff94092866288b0381a7b63",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "## 三、审批流程",
+          "scores": {
+            "fused": 0.03079839,
+            "vector_similarity": 0.629378,
+            "vector_rank": 3,
+            "keyword": 33.299034,
+            "keyword_rank": 7
+          }
+        },
+        {
+          "chunk_id": "chk_c620ffaae981517c8c2af81a198c7272a30543e4",
+          "evidence_span_id": "span_006890d7f5e44ec6a92e07901bac66fb",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 差旅费：交通费、住宿费、餐补。\n2. 办公费：文具、打印、快递。\n3. 通讯费：每月手机补贴上限 200 元。\n4. 业务招待费：需事前审批，单次上限 500 元。",
+          "scores": {
+            "fused": 0.03015873,
+            "vector_similarity": 0.504406,
+            "vector_rank": 10,
+            "keyword": 36.779732,
+            "keyword_rank": 3
+          }
+        }
+      ]
+    },
+    {
+      "example": "expense-reimbursement",
+      "id": "expense-dev-4",
+      "question": "交通违章罚款可以报销吗？",
+      "expected_terms": [
+        "交通违章罚款"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 1,
+      "vector_baseline_hit_rank": 3,
+      "top_k": [
+        {
+          "chunk_id": "chk_9a64d6f4bc7e25780ecc043ea7f68806b5e69dd9",
+          "evidence_span_id": "span_55194ff7d20849b3840c6d9672ef59e6",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 个人消费：购物、娱乐、个人物品。\n2. 交通违章罚款。\n3. 非出差期间家属产生的费用。",
+          "scores": {
+            "fused": 0.03226646,
+            "vector_similarity": 0.65461,
+            "vector_rank": 3,
+            "keyword": 60.302079,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_99e10ff3207aea765b61bb2acd7d73b991eda020",
+          "evidence_span_id": "span_e437ceab3da1412eab3341942e80bced",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "### 可报销费用",
+          "scores": {
+            "fused": 0.03201844,
+            "vector_similarity": 0.689087,
+            "vector_rank": 1,
+            "keyword": 38.058186,
+            "keyword_rank": 4
+          }
+        },
+        {
+          "chunk_id": "chk_c620ffaae981517c8c2af81a198c7272a30543e4",
+          "evidence_span_id": "span_006890d7f5e44ec6a92e07901bac66fb",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 差旅费：交通费、住宿费、餐补。\n2. 办公费：文具、打印、快递。\n3. 通讯费：每月手机补贴上限 200 元。\n4. 业务招待费：需事前审批，单次上限 500 元。",
+          "scores": {
+            "fused": 0.03128055,
+            "vector_similarity": 0.596904,
+            "vector_rank": 6,
+            "keyword": 39.209204,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_777189c510409d0aea3d55be9d6e3ce7b9ce4be5",
+          "evidence_span_id": "span_ac05a1aed80644c88d3ea294b36aa904",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "### 不可报销费用",
+          "scores": {
+            "fused": 0.03100962,
+            "vector_similarity": 0.63626,
+            "vector_rank": 4,
+            "keyword": 37.933988,
+            "keyword_rank": 5
+          }
+        },
+        {
+          "chunk_id": "chk_5a41f58d45b6c9e5c5e63be65654b4278b2b5342",
+          "evidence_span_id": "span_b8192809028942b6a1aa734ddc3d5da4",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "## 一、报销范围",
+          "scores": {
+            "fused": 0.03083491,
+            "vector_similarity": 0.663387,
+            "vector_rank": 2,
+            "keyword": 35.986502,
+            "keyword_rank": 8
+          }
+        }
+      ]
+    },
+    {
+      "example": "expense-reimbursement",
+      "id": "expense-dev-5",
+      "question": "电子发票可以用于报销吗？",
+      "expected_terms": [
+        "电子发票",
+        "同等效力"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 4,
+      "vector_baseline_hit_rank": 0,
+      "top_k": [
+        {
+          "chunk_id": "chk_99e10ff3207aea765b61bb2acd7d73b991eda020",
+          "evidence_span_id": "span_e437ceab3da1412eab3341942e80bced",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "### 可报销费用",
+          "scores": {
+            "fused": 0.03201844,
+            "vector_similarity": 0.703641,
+            "vector_rank": 1,
+            "keyword": 34.687958,
+            "keyword_rank": 4
+          }
+        },
+        {
+          "chunk_id": "chk_07ab514f987efa41ba4942aeeb4ee9b787449832",
+          "evidence_span_id": "span_b81fda6a4bb4477a9fda42a6f783eb18",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 紧急采购：可事后补审批，但需说明理由。\n2. 跨年报销：上一年度费用原则上不再受理。\n3. 外币报销：按报销日汇率折算。\n4. 丢失发票：需提供情况说明和其他证明材料。",
+          "scores": {
+            "fused": 0.03200205,
+            "vector_similarity": 0.644574,
+            "vector_rank": 3,
+            "keyword": 34.866974,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_a90696d4b7d56107bd30a1f636b1a6b7b6c8a59e",
+          "evidence_span_id": "span_7994196c6f24480da20b02cac0abd312",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "> 本文档为自建演示材料，用于验证“有据工作台”的文档导入、表格定位与数值核对流程。\n> 不是任何企业的真实制度，不代表实际报销政策。",
+          "scores": {
+            "fused": 0.03125763,
+            "vector_similarity": 0.630082,
+            "vector_rank": 5,
+            "keyword": 34.75843,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_35f0666df7b56a4f0e875b793317b17189fb4f34",
+          "evidence_span_id": "span_9106ee58aaa64d05abb45aaf26636fea",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 增值税发票：2000 元以上必须提供。\n2. 发票抬头：必须为公司全称。\n3. 发票时间：需在费用发生后 30 天内提交。\n4. 电子发票：与纸质发票具有同等效力。",
+          "scores": {
+            "fused": 0.0308862,
+            "vector_similarity": 0.587479,
+            "vector_rank": 9,
+            "keyword": 46.423928,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_5a41f58d45b6c9e5c5e63be65654b4278b2b5342",
+          "evidence_span_id": "span_b8192809028942b6a1aa734ddc3d5da4",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "## 一、报销范围",
+          "scores": {
+            "fused": 0.03062179,
+            "vector_similarity": 0.662298,
+            "vector_rank": 2,
+            "keyword": 31.250303,
+            "keyword_rank": 9
+          }
+        }
+      ]
+    },
+    {
+      "example": "expense-reimbursement",
+      "id": "expense-dev-6",
+      "question": "业务招待费需要事前审批吗？",
+      "expected_terms": [
+        "业务招待费",
+        "事前审批"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 5,
+      "vector_baseline_hit_rank": 0,
+      "top_k": [
+        {
+          "chunk_id": "chk_4305b2a62cb025c006e95b1c7b08796e710ce75a",
+          "evidence_span_id": "span_6fd5a8467c924affab06549474287589",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "### 办公费审批标准",
+          "scores": {
+            "fused": 0.03201844,
+            "vector_similarity": 0.723668,
+            "vector_rank": 1,
+            "keyword": 46.452782,
+            "keyword_rank": 4
+          }
+        },
+        {
+          "chunk_id": "chk_c64ff8e051a2c39ced844311a396a8d958d5e822",
+          "evidence_span_id": "span_c7d5d19571474226b3bc0b2c86e6c8e9",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "| 单笔金额 | 审批人 |\n| --- | --- |\n| 500 元以内 | 部门经理 |\n| 500 元至 2000 元 | 部门总监 |\n| 2000 元以上 | 财务总监 |",
+          "scores": {
+            "fused": 0.03200205,
+            "vector_similarity": 0.627606,
+            "vector_rank": 3,
+            "keyword": 47.006587,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_6b19a52151f4bedec5e36c21ea4c96ff13032ee3",
+          "evidence_span_id": "span_0b228c0e0ff94092866288b0381a7b63",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "## 三、审批流程",
+          "scores": {
+            "fused": 0.03151365,
+            "vector_similarity": 0.672479,
+            "vector_rank": 2,
+            "keyword": 46.108912,
+            "keyword_rank": 5
+          }
+        },
+        {
+          "chunk_id": "chk_cfabace130a79bcfd719cce1fe3b8c1c8cf7b922",
+          "evidence_span_id": "span_7ed4ae4ea7b54caf8556fa86def15359",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 提交申请：填写报销单，附票据。\n2. 部门审批：直属上级审核。\n3. 财务审核：核对票据、标准与预算。\n4. 支付：审批通过后 5 个工作日内支付。",
+          "scores": {
+            "fused": 0.03149802,
+            "vector_similarity": 0.591437,
+            "vector_rank": 4,
+            "keyword": 46.767121,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_c620ffaae981517c8c2af81a198c7272a30543e4",
+          "evidence_span_id": "span_006890d7f5e44ec6a92e07901bac66fb",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 差旅费：交通费、住宿费、餐补。\n2. 办公费：文具、打印、快递。\n3. 通讯费：每月手机补贴上限 200 元。\n4. 业务招待费：需事前审批，单次上限 500 元。",
+          "scores": {
+            "fused": 0.03131882,
+            "vector_similarity": 0.572033,
+            "vector_rank": 7,
+            "keyword": 67.54123,
+            "keyword_rank": 1
+          }
+        }
+      ]
+    },
+    {
+      "example": "expense-reimbursement",
+      "id": "expense-dev-7",
+      "question": "发票需要在费用发生后多久内提交？",
+      "expected_terms": [
+        "30 天内提交",
+        "发票时间"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 1,
+      "vector_baseline_hit_rank": 1,
+      "top_k": [
+        {
+          "chunk_id": "chk_35f0666df7b56a4f0e875b793317b17189fb4f34",
+          "evidence_span_id": "span_9106ee58aaa64d05abb45aaf26636fea",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 增值税发票：2000 元以上必须提供。\n2. 发票抬头：必须为公司全称。\n3. 发票时间：需在费用发生后 30 天内提交。\n4. 电子发票：与纸质发票具有同等效力。",
+          "scores": {
+            "fused": 0.03278689,
+            "vector_similarity": 0.72191,
+            "vector_rank": 1,
+            "keyword": 67.399049,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_07ab514f987efa41ba4942aeeb4ee9b787449832",
+          "evidence_span_id": "span_b81fda6a4bb4477a9fda42a6f783eb18",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 紧急采购：可事后补审批，但需说明理由。\n2. 跨年报销：上一年度费用原则上不再受理。\n3. 外币报销：按报销日汇率折算。\n4. 丢失发票：需提供情况说明和其他证明材料。",
+          "scores": {
+            "fused": 0.03175403,
+            "vector_similarity": 0.628562,
+            "vector_rank": 4,
+            "keyword": 45.103922,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_cfabace130a79bcfd719cce1fe3b8c1c8cf7b922",
+          "evidence_span_id": "span_7ed4ae4ea7b54caf8556fa86def15359",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 提交申请：填写报销单，附票据。\n2. 部门审批：直属上级审核。\n3. 财务审核：核对票据、标准与预算。\n4. 支付：审批通过后 5 个工作日内支付。",
+          "scores": {
+            "fused": 0.03174603,
+            "vector_similarity": 0.655144,
+            "vector_rank": 3,
+            "keyword": 44.778711,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_7a0eefed5bdc253dc5fad5426bf0bb2ee9f5cd1f",
+          "evidence_span_id": "span_132d3d98156f404db652e1522e7b7089",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "## 四、票据要求",
+          "scores": {
+            "fused": 0.03128055,
+            "vector_similarity": 0.671688,
+            "vector_rank": 2,
+            "keyword": 42.861654,
+            "keyword_rank": 6
+          }
+        },
+        {
+          "chunk_id": "chk_7a887c622441882402ed9862336bcdda94291331",
+          "evidence_span_id": "span_de9431fbe8c24154b8e3751c37a7d281",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 交通费：实报实销，优先选择经济舱或二等座。\n2. 住宿费：\n   - 经理级及以上：每晚不超过 600 元。\n   - 普通员工：每晚不超过 400 元。\n3. 餐补：每天 80 元，无需发票。",
+          "scores": {
+            "fused": 0.02987737,
+            "vector_similarity": 0.566869,
+            "vector_rank": 9,
+            "keyword": 43.037512,
+            "keyword_rank": 5
+          }
+        }
+      ]
+    },
+    {
+      "example": "expense-reimbursement",
+      "id": "expense-dev-8",
+      "question": "我是普通员工，出差 3 天住宿花费 1200 元，每晚 400 元，是否符合标准？",
+      "expected_terms": [
+        "普通员工",
+        "每晚不超过 400 元"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 1,
+      "vector_baseline_hit_rank": 1,
+      "top_k": [
+        {
+          "chunk_id": "chk_7a887c622441882402ed9862336bcdda94291331",
+          "evidence_span_id": "span_de9431fbe8c24154b8e3751c37a7d281",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 交通费：实报实销，优先选择经济舱或二等座。\n2. 住宿费：\n   - 经理级及以上：每晚不超过 600 元。\n   - 普通员工：每晚不超过 400 元。\n3. 餐补：每天 80 元，无需发票。",
+          "scores": {
+            "fused": 0.03278689,
+            "vector_similarity": 0.687415,
+            "vector_rank": 1,
+            "keyword": 84.876486,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_681a6a754763ec327cca9d4d9bac7d5be0d68b9c",
+          "evidence_span_id": "span_af6147ec83c1426ea0da0a1e35eed027",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "### 差旅费标准",
+          "scores": {
+            "fused": 0.03175403,
+            "vector_similarity": 0.67698,
+            "vector_rank": 2,
+            "keyword": 58.453489,
+            "keyword_rank": 4
+          }
+        },
+        {
+          "chunk_id": "chk_c620ffaae981517c8c2af81a198c7272a30543e4",
+          "evidence_span_id": "span_006890d7f5e44ec6a92e07901bac66fb",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "1. 差旅费：交通费、住宿费、餐补。\n2. 办公费：文具、打印、快递。\n3. 通讯费：每月手机补贴上限 200 元。\n4. 业务招待费：需事前审批，单次上限 500 元。",
+          "scores": {
+            "fused": 0.03151365,
+            "vector_similarity": 0.558343,
+            "vector_rank": 5,
+            "keyword": 62.097965,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_4305b2a62cb025c006e95b1c7b08796e710ce75a",
+          "evidence_span_id": "span_6fd5a8467c924affab06549474287589",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "### 办公费审批标准",
+          "scores": {
+            "fused": 0.03079839,
+            "vector_similarity": 0.636083,
+            "vector_rank": 3,
+            "keyword": 55.683866,
+            "keyword_rank": 7
+          }
+        },
+        {
+          "chunk_id": "chk_c64ff8e051a2c39ced844311a396a8d958d5e822",
+          "evidence_span_id": "span_c7d5d19571474226b3bc0b2c86e6c8e9",
+          "source_label": "评测-expense-reimbursement / 演示规则_费用报销.txt",
+          "page": 1,
+          "text": "| 单笔金额 | 审批人 |\n| --- | --- |\n| 500 元以内 | 部门经理 |\n| 500 元至 2000 元 | 部门总监 |\n| 2000 元以上 | 财务总监 |",
+          "scores": {
+            "fused": 0.03077652,
+            "vector_similarity": 0.564631,
+            "vector_rank": 4,
+            "keyword": 55.833845,
+            "keyword_rank": 6
+          }
+        }
+      ]
+    },
+    {
+      "example": "project-application",
+      "id": "project-dev-1",
+      "question": "项目申报的截止时间是什么时候？",
+      "expected_terms": [
+        "申报截止时间",
+        "11 月 15 日"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 1,
+      "vector_baseline_hit_rank": 2,
+      "top_k": [
+        {
+          "chunk_id": "chk_4749725ef52b2c44a10e3c96173613c2e298253d",
+          "evidence_span_id": "span_a0cabc911d934c399dc7757a8e2dd4aa",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 校内预审时间：2024 年 11 月 1 日。\n2. 申报截止时间：2024 年 11 月 15 日，逾期不予受理。\n3. 上级报送时间：2024 年 11 月 20 日。",
+          "scores": {
+            "fused": 0.03252247,
+            "vector_similarity": 0.654134,
+            "vector_rank": 2,
+            "keyword": 36.751029,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_3bd5920a852fcfad9dd5fce404ecde2734ac30eb",
+          "evidence_span_id": "span_e7a1cdea9258462faeb01c46d18f2d7e",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "## 二、申报时间",
+          "scores": {
+            "fused": 0.03226646,
+            "vector_similarity": 0.749916,
+            "vector_rank": 1,
+            "keyword": 28.806958,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_57d24513fda656c2c1637a48ef3fd8ce4ef4fa10",
+          "evidence_span_id": "span_043b15314058453191be60c5bf0fbb5c",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "校内预审、申报截止和上级报送是同一流程中的不同节点，不是互相冲突的三个截止日期。",
+          "scores": {
+            "fused": 0.03200205,
+            "vector_similarity": 0.616271,
+            "vector_rank": 3,
+            "keyword": 33.134551,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_4c909ee9abbef29789f3e47c0dead658c7ed8aca",
+          "evidence_span_id": "span_c53f8cda9bc44d34b040dafa1b84f370",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "# 演示规则：科研项目申报条件",
+          "scores": {
+            "fused": 0.03077652,
+            "vector_similarity": 0.589014,
+            "vector_rank": 6,
+            "keyword": 26.965835,
+            "keyword_rank": 4
+          }
+        },
+        {
+          "chunk_id": "chk_7d357091f351f1e44170bfbef8d254012b53ae78",
+          "evidence_span_id": "span_3f37278570dd4c4c883f01932d73b55a",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 重点项目申请人须为副教授及以上职称，并提交近三年研究成果。\n2. 申请人年龄不超过 55 周岁（仅适用于重点项目；一般项目不设年龄限制）。\n3. 申请人须为在编在岗教师。\n4. 重点项目申请人须在近 3 年主持过省级及以上科研项目。",
+          "scores": {
+            "fused": 0.03053613,
+            "vector_similarity": 0.604855,
+            "vector_rank": 5,
+            "keyword": 25.018829,
+            "keyword_rank": 6
+          }
+        }
+      ]
+    },
+    {
+      "example": "project-application",
+      "id": "project-dev-2",
+      "question": "申请人需要满足哪些职称要求？",
+      "expected_terms": [
+        "副教授及以上职称"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 2,
+      "vector_baseline_hit_rank": 2,
+      "top_k": [
+        {
+          "chunk_id": "chk_9c7ceedc6f07dddb2c08cd168f7031d9d9444e79",
+          "evidence_span_id": "span_f799678a16b44236b0f2787f6a1d07f8",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "## 一、申请人资格",
+          "scores": {
+            "fused": 0.03252247,
+            "vector_similarity": 0.711404,
+            "vector_rank": 1,
+            "keyword": 25.082435,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_7d357091f351f1e44170bfbef8d254012b53ae78",
+          "evidence_span_id": "span_3f37278570dd4c4c883f01932d73b55a",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 重点项目申请人须为副教授及以上职称，并提交近三年研究成果。\n2. 申请人年龄不超过 55 周岁（仅适用于重点项目；一般项目不设年龄限制）。\n3. 申请人须为在编在岗教师。\n4. 重点项目申请人须在近 3 年主持过省级及以上科研项目。",
+          "scores": {
+            "fused": 0.03252247,
+            "vector_similarity": 0.64851,
+            "vector_rank": 2,
+            "keyword": 28.521423,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_1ef42ae24ec59ba06942ae0bbb4acfa11c2386ba",
+          "evidence_span_id": "span_35489c35ec8341c7a8b7617826d5dbc8",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "## 三、申报材料",
+          "scores": {
+            "fused": 0.03125763,
+            "vector_similarity": 0.5741,
+            "vector_rank": 3,
+            "keyword": 15.081986,
+            "keyword_rank": 5
+          }
+        },
+        {
+          "chunk_id": "chk_4c909ee9abbef29789f3e47c0dead658c7ed8aca",
+          "evidence_span_id": "span_c53f8cda9bc44d34b040dafa1b84f370",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "# 演示规则：科研项目申报条件",
+          "scores": {
+            "fused": 0.03055037,
+            "vector_similarity": 0.573728,
+            "vector_rank": 4,
+            "keyword": 15.001606,
+            "keyword_rank": 7
+          }
+        },
+        {
+          "chunk_id": "chk_3bd5920a852fcfad9dd5fce404ecde2734ac30eb",
+          "evidence_span_id": "span_e7a1cdea9258462faeb01c46d18f2d7e",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "## 二、申报时间",
+          "scores": {
+            "fused": 0.03053613,
+            "vector_similarity": 0.551574,
+            "vector_rank": 5,
+            "keyword": 15.081986,
+            "keyword_rank": 6
+          }
+        }
+      ]
+    },
+    {
+      "example": "project-application",
+      "id": "project-dev-3",
+      "question": "重点项目对申请人的前期项目有什么要求？",
+      "expected_terms": [
+        "省级及以上科研项目",
+        "近 3 年主持"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 1,
+      "vector_baseline_hit_rank": 1,
+      "top_k": [
+        {
+          "chunk_id": "chk_7d357091f351f1e44170bfbef8d254012b53ae78",
+          "evidence_span_id": "span_3f37278570dd4c4c883f01932d73b55a",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 重点项目申请人须为副教授及以上职称，并提交近三年研究成果。\n2. 申请人年龄不超过 55 周岁（仅适用于重点项目；一般项目不设年龄限制）。\n3. 申请人须为在编在岗教师。\n4. 重点项目申请人须在近 3 年主持过省级及以上科研项目。",
+          "scores": {
+            "fused": 0.03278689,
+            "vector_similarity": 0.657725,
+            "vector_rank": 1,
+            "keyword": 46.489668,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_b06f1dce620075f83408ff720d3233ed42b9c867",
+          "evidence_span_id": "span_8dc946d02b314e48a3a2250b9cd00ee9",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 同一人同一年度只能主持 1 项重点项目。\n2. 已承担在研项目且未结题者，不得申报新的重点项目。\n3. 有违规记录者不得申报。\n4. 重点项目与一般项目的申报条件不同；本文档未列出的条件，以申报通知为准。",
+          "scores": {
+            "fused": 0.03200205,
+            "vector_similarity": 0.654763,
+            "vector_rank": 2,
+            "keyword": 38.861508,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_4c909ee9abbef29789f3e47c0dead658c7ed8aca",
+          "evidence_span_id": "span_c53f8cda9bc44d34b040dafa1b84f370",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "# 演示规则：科研项目申报条件",
+          "scores": {
+            "fused": 0.03125763,
+            "vector_similarity": 0.621128,
+            "vector_rank": 3,
+            "keyword": 28.669991,
+            "keyword_rank": 5
+          }
+        },
+        {
+          "chunk_id": "chk_9c7ceedc6f07dddb2c08cd168f7031d9d9444e79",
+          "evidence_span_id": "span_f799678a16b44236b0f2787f6a1d07f8",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "## 一、申请人资格",
+          "scores": {
+            "fused": 0.03125,
+            "vector_similarity": 0.597544,
+            "vector_rank": 4,
+            "keyword": 34.450857,
+            "keyword_rank": 4
+          }
+        },
+        {
+          "chunk_id": "chk_1a13f4a657a77dc892100d6e41b20b29a0c31f58",
+          "evidence_span_id": "span_c4a345323bb34b91ad148baa2c1d5dcb",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 项目申请书（一式三份）。\n2. 前期研究成果证明。\n3. 个人简历。\n4. 承诺书。",
+          "scores": {
+            "fused": 0.03083491,
+            "vector_similarity": 0.527978,
+            "vector_rank": 8,
+            "keyword": 38.953264,
+            "keyword_rank": 2
+          }
+        }
+      ]
+    },
+    {
+      "example": "project-application",
+      "id": "project-dev-4",
+      "question": "同一人同一年度可以主持几项重点项目？",
+      "expected_terms": [
+        "只能主持 1 项重点项目",
+        "同一人同一年度"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 1,
+      "vector_baseline_hit_rank": 1,
+      "top_k": [
+        {
+          "chunk_id": "chk_b06f1dce620075f83408ff720d3233ed42b9c867",
+          "evidence_span_id": "span_8dc946d02b314e48a3a2250b9cd00ee9",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 同一人同一年度只能主持 1 项重点项目。\n2. 已承担在研项目且未结题者，不得申报新的重点项目。\n3. 有违规记录者不得申报。\n4. 重点项目与一般项目的申报条件不同；本文档未列出的条件，以申报通知为准。",
+          "scores": {
+            "fused": 0.03278689,
+            "vector_similarity": 0.685397,
+            "vector_rank": 1,
+            "keyword": 76.745567,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_7d357091f351f1e44170bfbef8d254012b53ae78",
+          "evidence_span_id": "span_3f37278570dd4c4c883f01932d73b55a",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 重点项目申请人须为副教授及以上职称，并提交近三年研究成果。\n2. 申请人年龄不超过 55 周岁（仅适用于重点项目；一般项目不设年龄限制）。\n3. 申请人须为在编在岗教师。\n4. 重点项目申请人须在近 3 年主持过省级及以上科研项目。",
+          "scores": {
+            "fused": 0.03225806,
+            "vector_similarity": 0.582668,
+            "vector_rank": 2,
+            "keyword": 64.466283,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_4c909ee9abbef29789f3e47c0dead658c7ed8aca",
+          "evidence_span_id": "span_c53f8cda9bc44d34b040dafa1b84f370",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "# 演示规则：科研项目申报条件",
+          "scores": {
+            "fused": 0.03100962,
+            "vector_similarity": 0.476797,
+            "vector_rank": 4,
+            "keyword": 46.099629,
+            "keyword_rank": 5
+          }
+        },
+        {
+          "chunk_id": "chk_9c7ceedc6f07dddb2c08cd168f7031d9d9444e79",
+          "evidence_span_id": "span_f799678a16b44236b0f2787f6a1d07f8",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "## 一、申请人资格",
+          "scores": {
+            "fused": 0.03053613,
+            "vector_similarity": 0.461742,
+            "vector_rank": 5,
+            "keyword": 45.438911,
+            "keyword_rank": 6
+          }
+        },
+        {
+          "chunk_id": "chk_57d24513fda656c2c1637a48ef3fd8ce4ef4fa10",
+          "evidence_span_id": "span_043b15314058453191be60c5bf0fbb5c",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "校内预审、申报截止和上级报送是同一流程中的不同节点，不是互相冲突的三个截止日期。",
+          "scores": {
+            "fused": 0.03036577,
+            "vector_similarity": 0.423933,
+            "vector_rank": 9,
+            "keyword": 48.593304,
+            "keyword_rank": 3
+          }
+        }
+      ]
+    },
+    {
+      "example": "project-application",
+      "id": "project-dev-5",
+      "question": "校内预审和上级报送的时间分别是什么？",
+      "expected_terms": [
+        "校内预审时间",
+        "上级报送时间"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 2,
+      "vector_baseline_hit_rank": 2,
+      "top_k": [
+        {
+          "chunk_id": "chk_57d24513fda656c2c1637a48ef3fd8ce4ef4fa10",
+          "evidence_span_id": "span_043b15314058453191be60c5bf0fbb5c",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "校内预审、申报截止和上级报送是同一流程中的不同节点，不是互相冲突的三个截止日期。",
+          "scores": {
+            "fused": 0.03252247,
+            "vector_similarity": 0.765873,
+            "vector_rank": 1,
+            "keyword": 63.034324,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_4749725ef52b2c44a10e3c96173613c2e298253d",
+          "evidence_span_id": "span_a0cabc911d934c399dc7757a8e2dd4aa",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 校内预审时间：2024 年 11 月 1 日。\n2. 申报截止时间：2024 年 11 月 15 日，逾期不予受理。\n3. 上级报送时间：2024 年 11 月 20 日。",
+          "scores": {
+            "fused": 0.03252247,
+            "vector_similarity": 0.72519,
+            "vector_rank": 2,
+            "keyword": 64.095411,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_3bd5920a852fcfad9dd5fce404ecde2734ac30eb",
+          "evidence_span_id": "span_e7a1cdea9258462faeb01c46d18f2d7e",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "## 二、申报时间",
+          "scores": {
+            "fused": 0.03174603,
+            "vector_similarity": 0.64458,
+            "vector_rank": 3,
+            "keyword": 42.296366,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_6614fd906b741283aadf6791343f594b8b551fc8",
+          "evidence_span_id": "span_f384845836874aee95d2630951b3ee76",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "评审分为形式审查与专家评审两个阶段。形式审查不通过的材料不进入专家评审。",
+          "scores": {
+            "fused": 0.03100962,
+            "vector_similarity": 0.497902,
+            "vector_rank": 5,
+            "keyword": 38.808135,
+            "keyword_rank": 4
+          }
+        },
+        {
+          "chunk_id": "chk_bda119f89a48d254d5a9e39f03d05edcb3a2c945",
+          "evidence_span_id": "span_3b60bed598d742998bb9d412ca45b379",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "## 五、评审流程",
+          "scores": {
+            "fused": 0.03077652,
+            "vector_similarity": 0.533767,
+            "vector_rank": 4,
+            "keyword": 35.889582,
+            "keyword_rank": 6
+          }
+        }
+      ]
+    },
+    {
+      "example": "project-application",
+      "id": "project-dev-6",
+      "question": "申报需要提交哪些材料？",
+      "expected_terms": [
+        "项目申请书",
+        "前期研究成果证明",
+        "个人简历"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 2,
+      "vector_baseline_hit_rank": 3,
+      "top_k": [
+        {
+          "chunk_id": "chk_1ef42ae24ec59ba06942ae0bbb4acfa11c2386ba",
+          "evidence_span_id": "span_35489c35ec8341c7a8b7617826d5dbc8",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "## 三、申报材料",
+          "scores": {
+            "fused": 0.03278689,
+            "vector_similarity": 0.760661,
+            "vector_rank": 1,
+            "keyword": 21.635066,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_1a13f4a657a77dc892100d6e41b20b29a0c31f58",
+          "evidence_span_id": "span_c4a345323bb34b91ad148baa2c1d5dcb",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 项目申请书（一式三份）。\n2. 前期研究成果证明。\n3. 个人简历。\n4. 承诺书。",
+          "scores": {
+            "fused": 0.03200205,
+            "vector_similarity": 0.701586,
+            "vector_rank": 3,
+            "keyword": 18.60742,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_3bd5920a852fcfad9dd5fce404ecde2734ac30eb",
+          "evidence_span_id": "span_e7a1cdea9258462faeb01c46d18f2d7e",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "## 二、申报时间",
+          "scores": {
+            "fused": 0.03128055,
+            "vector_similarity": 0.718952,
+            "vector_rank": 2,
+            "keyword": 15.505384,
+            "keyword_rank": 6
+          }
+        },
+        {
+          "chunk_id": "chk_3488a0cba423fd9fc674b9561917c1cc31c53c22",
+          "evidence_span_id": "span_d3f40d8fb7164ad3a9285110cb9cd892",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "> 本文档为自建演示材料，用于验证“有据工作台”的文档导入、证据定位与条件核对流程。\n> 不是真实客户材料，不代表任何具体学校或项目的实际规定。",
+          "scores": {
+            "fused": 0.03125763,
+            "vector_similarity": 0.632958,
+            "vector_rank": 5,
+            "keyword": 18.104809,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_7d357091f351f1e44170bfbef8d254012b53ae78",
+          "evidence_span_id": "span_3f37278570dd4c4c883f01932d73b55a",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 重点项目申请人须为副教授及以上职称，并提交近三年研究成果。\n2. 申请人年龄不超过 55 周岁（仅适用于重点项目；一般项目不设年龄限制）。\n3. 申请人须为在编在岗教师。\n4. 重点项目申请人须在近 3 年主持过省级及以上科研项目。",
+          "scores": {
+            "fused": 0.03011775,
+            "vector_similarity": 0.571448,
+            "vector_rank": 9,
+            "keyword": 17.956465,
+            "keyword_rank": 4
+          }
+        }
+      ]
+    },
+    {
+      "example": "project-application",
+      "id": "project-dev-7",
+      "question": "什么情况下不能申报项目？",
+      "expected_terms": [
+        "不得申报",
+        "违规记录",
+        "未结题"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 1,
+      "vector_baseline_hit_rank": 1,
+      "top_k": [
+        {
+          "chunk_id": "chk_b06f1dce620075f83408ff720d3233ed42b9c867",
+          "evidence_span_id": "span_8dc946d02b314e48a3a2250b9cd00ee9",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 同一人同一年度只能主持 1 项重点项目。\n2. 已承担在研项目且未结题者，不得申报新的重点项目。\n3. 有违规记录者不得申报。\n4. 重点项目与一般项目的申报条件不同；本文档未列出的条件，以申报通知为准。",
+          "scores": {
+            "fused": 0.03278689,
+            "vector_similarity": 0.704449,
+            "vector_rank": 1,
+            "keyword": 17.468731,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_4c909ee9abbef29789f3e47c0dead658c7ed8aca",
+          "evidence_span_id": "span_c53f8cda9bc44d34b040dafa1b84f370",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "# 演示规则：科研项目申报条件",
+          "scores": {
+            "fused": 0.03225806,
+            "vector_similarity": 0.64419,
+            "vector_rank": 2,
+            "keyword": 14.357348,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_3488a0cba423fd9fc674b9561917c1cc31c53c22",
+          "evidence_span_id": "span_d3f40d8fb7164ad3a9285110cb9cd892",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "> 本文档为自建演示材料，用于验证“有据工作台”的文档导入、证据定位与条件核对流程。\n> 不是真实客户材料，不代表任何具体学校或项目的实际规定。",
+          "scores": {
+            "fused": 0.03125,
+            "vector_similarity": 0.598859,
+            "vector_rank": 4,
+            "keyword": 13.193489,
+            "keyword_rank": 4
+          }
+        },
+        {
+          "chunk_id": "chk_7d357091f351f1e44170bfbef8d254012b53ae78",
+          "evidence_span_id": "span_3f37278570dd4c4c883f01932d73b55a",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 重点项目申请人须为副教授及以上职称，并提交近三年研究成果。\n2. 申请人年龄不超过 55 周岁（仅适用于重点项目；一般项目不设年龄限制）。\n3. 申请人须为在编在岗教师。\n4. 重点项目申请人须在近 3 年主持过省级及以上科研项目。",
+          "scores": {
+            "fused": 0.03102453,
+            "vector_similarity": 0.584,
+            "vector_rank": 6,
+            "keyword": 13.7901,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_3bd5920a852fcfad9dd5fce404ecde2734ac30eb",
+          "evidence_span_id": "span_e7a1cdea9258462faeb01c46d18f2d7e",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "## 二、申报时间",
+          "scores": {
+            "fused": 0.03036577,
+            "vector_similarity": 0.628377,
+            "vector_rank": 3,
+            "keyword": 10.405136,
+            "keyword_rank": 9
+          }
+        }
+      ]
+    },
+    {
+      "example": "project-application",
+      "id": "project-dev-8",
+      "question": "我是副教授，有 2023 年省社科项目在研，是否可以申报 2024 年重点项目？",
+      "expected_terms": [
+        "在研项目且未结题",
+        "副教授及以上职称",
+        "不得申报新的重点项目"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 1,
+      "vector_baseline_hit_rank": 1,
+      "top_k": [
+        {
+          "chunk_id": "chk_7d357091f351f1e44170bfbef8d254012b53ae78",
+          "evidence_span_id": "span_3f37278570dd4c4c883f01932d73b55a",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 重点项目申请人须为副教授及以上职称，并提交近三年研究成果。\n2. 申请人年龄不超过 55 周岁（仅适用于重点项目；一般项目不设年龄限制）。\n3. 申请人须为在编在岗教师。\n4. 重点项目申请人须在近 3 年主持过省级及以上科研项目。",
+          "scores": {
+            "fused": 0.03278689,
+            "vector_similarity": 0.678739,
+            "vector_rank": 1,
+            "keyword": 70.302029,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_b06f1dce620075f83408ff720d3233ed42b9c867",
+          "evidence_span_id": "span_8dc946d02b314e48a3a2250b9cd00ee9",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 同一人同一年度只能主持 1 项重点项目。\n2. 已承担在研项目且未结题者，不得申报新的重点项目。\n3. 有违规记录者不得申报。\n4. 重点项目与一般项目的申报条件不同；本文档未列出的条件，以申报通知为准。",
+          "scores": {
+            "fused": 0.03225806,
+            "vector_similarity": 0.617818,
+            "vector_rank": 2,
+            "keyword": 63.331601,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_4c909ee9abbef29789f3e47c0dead658c7ed8aca",
+          "evidence_span_id": "span_c53f8cda9bc44d34b040dafa1b84f370",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "# 演示规则：科研项目申报条件",
+          "scores": {
+            "fused": 0.03174603,
+            "vector_similarity": 0.540531,
+            "vector_rank": 3,
+            "keyword": 51.63486,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_4749725ef52b2c44a10e3c96173613c2e298253d",
+          "evidence_span_id": "span_a0cabc911d934c399dc7757a8e2dd4aa",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "1. 校内预审时间：2024 年 11 月 1 日。\n2. 申报截止时间：2024 年 11 月 15 日，逾期不予受理。\n3. 上级报送时间：2024 年 11 月 20 日。",
+          "scores": {
+            "fused": 0.03125,
+            "vector_similarity": 0.511533,
+            "vector_rank": 4,
+            "keyword": 50.421922,
+            "keyword_rank": 4
+          }
+        },
+        {
+          "chunk_id": "chk_3488a0cba423fd9fc674b9561917c1cc31c53c22",
+          "evidence_span_id": "span_d3f40d8fb7164ad3a9285110cb9cd892",
+          "source_label": "评测-project-application / 演示规则_项目申报.txt",
+          "page": 1,
+          "text": "> 本文档为自建演示材料，用于验证“有据工作台”的文档导入、证据定位与条件核对流程。\n> 不是真实客户材料，不代表任何具体学校或项目的实际规定。",
+          "scores": {
+            "fused": 0.03076923,
+            "vector_similarity": 0.501568,
+            "vector_rank": 5,
+            "keyword": 47.726377,
+            "keyword_rank": 5
+          }
+        }
+      ]
+    },
+    {
+      "example": "warranty-service",
+      "id": "warranty-dev-1",
+      "question": "设备主机的保修期是多久？",
+      "expected_terms": [
+        "主机",
+        "1 年"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 1,
+      "vector_baseline_hit_rank": 1,
+      "top_k": [
+        {
+          "chunk_id": "chk_b6016bf3265d88b6b4342de8ffd563f5d0ae7aa9",
+          "evidence_span_id": "span_e8065e11a60e4f548049c266ee2bc3d9",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "| 部件 | 保修期 |\n| --- | --- |\n| 主机 | 1 年 |\n| 电池 | 6 个月或充电 300 次，以先到者为准 |\n| 屏幕 | 1 年，不含外力损坏 |\n| 配件 | 3 个月 |",
+          "scores": {
+            "fused": 0.03278689,
+            "vector_similarity": 0.733409,
+            "vector_rank": 1,
+            "keyword": 35.420791,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_726c7b2eca1825599db1f217e1e32494947e75e8",
+          "evidence_span_id": "span_52046b3202b4439fb226ae796c85cc0a",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "## 二、保修期限",
+          "scores": {
+            "fused": 0.03200205,
+            "vector_similarity": 0.702382,
+            "vector_rank": 2,
+            "keyword": 29.206869,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_af9bc409799be6428660ce4a4f92cca632413a76",
+          "evidence_span_id": "span_f881cb920f1a41f48f0e029e97013385",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 硬件故障：制造缺陷导致的故障。\n2. 软件问题：出厂预装软件的故障。\n3. 配件：原装电源适配器、数据线。\n4. 保修期内免费维修或更换。",
+          "scores": {
+            "fused": 0.03033088,
+            "vector_similarity": 0.650835,
+            "vector_rank": 4,
+            "keyword": 25.240117,
+            "keyword_rank": 8
+          }
+        },
+        {
+          "chunk_id": "chk_2f43ccf91b3411a787971b38f31a6a4a94ff4b7b",
+          "evidence_span_id": "span_cd77b432b267401e8044bedaea569f23",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 延保 1 年：购机时加购，价格为原价 10%。\n2. 延保 2 年：购机时加购，价格为原价 15%。\n3. 延保须在原保修期到期前购买。",
+          "scores": {
+            "fused": 0.03011775,
+            "vector_similarity": 0.61396,
+            "vector_rank": 9,
+            "keyword": 28.188678,
+            "keyword_rank": 4
+          }
+        },
+        {
+          "chunk_id": "chk_0a4e41067f64b3292b5f16158aa692b5ed218197",
+          "evidence_span_id": "span_13ecba934d46433a9fd0419ee3be0d6e",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "> 本文档为自建演示材料，用于验证“有据工作台”的时间计算、排除条款与阈值核对流程。\n> 不是任何厂商的真实保修政策，不代表实际合同条款。",
+          "scores": {
+            "fused": 0.02967033,
+            "vector_similarity": 0.597121,
+            "vector_rank": 10,
+            "keyword": 26.422518,
+            "keyword_rank": 5
+          }
+        }
+      ]
+    },
+    {
+      "example": "warranty-service",
+      "id": "warranty-dev-2",
+      "question": "电池充电 350 次后出现问题，是否在保修范围内？",
+      "expected_terms": [
+        "电池",
+        "300 次",
+        "6 个月"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 1,
+      "vector_baseline_hit_rank": 2,
+      "top_k": [
+        {
+          "chunk_id": "chk_b6016bf3265d88b6b4342de8ffd563f5d0ae7aa9",
+          "evidence_span_id": "span_e8065e11a60e4f548049c266ee2bc3d9",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "| 部件 | 保修期 |\n| --- | --- |\n| 主机 | 1 年 |\n| 电池 | 6 个月或充电 300 次，以先到者为准 |\n| 屏幕 | 1 年，不含外力损坏 |\n| 配件 | 3 个月 |",
+          "scores": {
+            "fused": 0.03225806,
+            "vector_similarity": 0.671603,
+            "vector_rank": 2,
+            "keyword": 63.911227,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_af9bc409799be6428660ce4a4f92cca632413a76",
+          "evidence_span_id": "span_f881cb920f1a41f48f0e029e97013385",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 硬件故障：制造缺陷导致的故障。\n2. 软件问题：出厂预装软件的故障。\n3. 配件：原装电源适配器、数据线。\n4. 保修期内免费维修或更换。",
+          "scores": {
+            "fused": 0.03201844,
+            "vector_similarity": 0.673638,
+            "vector_rank": 1,
+            "keyword": 55.904761,
+            "keyword_rank": 4
+          }
+        },
+        {
+          "chunk_id": "chk_a16ed0ec04158d11f897ca0670d7de441910bb2c",
+          "evidence_span_id": "span_b597f86f1aba4fda9e1dce64f673635e",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "## 一、保修范围",
+          "scores": {
+            "fused": 0.03201844,
+            "vector_similarity": 0.635548,
+            "vector_rank": 4,
+            "keyword": 64.447996,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_36d1c38704d97aa0e1bcf5551cbaa1f8dec9dd53",
+          "evidence_span_id": "span_d63fdb3c10104b009bd0e0c90d4c0dd4",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "### 保修覆盖",
+          "scores": {
+            "fused": 0.0305789,
+            "vector_similarity": 0.640078,
+            "vector_rank": 3,
+            "keyword": 47.925903,
+            "keyword_rank": 8
+          }
+        },
+        {
+          "chunk_id": "chk_7b8f97be52cb3468e320aa5792fc83e525f5d9a2",
+          "evidence_span_id": "span_8aad58d26e2e4b35a727814dd3bc6df8",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 报修：电话或在线提交工单。\n2. 诊断：远程诊断或送修检测。\n3. 报价：超出保修范围的维修先报价。\n4. 维修：用户确认后维修。\n5. 交付：维修完成通知取机。",
+          "scores": {
+            "fused": 0.0297619,
+            "vector_similarity": 0.559961,
+            "vector_rank": 12,
+            "keyword": 58.401868,
+            "keyword_rank": 3
+          }
+        }
+      ]
+    },
+    {
+      "example": "warranty-service",
+      "id": "warranty-dev-3",
+      "question": "设备进水导致故障可以免费维修吗？",
+      "expected_terms": [
+        "人为损坏",
+        "进水"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 5,
+      "vector_baseline_hit_rank": 0,
+      "top_k": [
+        {
+          "chunk_id": "chk_af9bc409799be6428660ce4a4f92cca632413a76",
+          "evidence_span_id": "span_f881cb920f1a41f48f0e029e97013385",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 硬件故障：制造缺陷导致的故障。\n2. 软件问题：出厂预装软件的故障。\n3. 配件：原装电源适配器、数据线。\n4. 保修期内免费维修或更换。",
+          "scores": {
+            "fused": 0.03278689,
+            "vector_similarity": 0.64085,
+            "vector_rank": 1,
+            "keyword": 75.379693,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_7c191192723be83be1654b3a9b088845cdb7b54a",
+          "evidence_span_id": "span_fcdd94479691485fbce95b17da6ce76f",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 维修前用户需自行备份数据。\n2. 维修过程中可能导致数据丢失，服务商不承担数据恢复责任。\n3. 维修人员对设备信息保密，不得未经授权访问用户数据。\n4. 争议优先协商；协商不成提交仲裁，适用中华人民共和国法律。",
+          "scores": {
+            "fused": 0.03105441,
+            "vector_similarity": 0.579026,
+            "vector_rank": 7,
+            "keyword": 61.887366,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_3f5057a45acb14ae2ae24901252e832c90f0bc5f",
+          "evidence_span_id": "span_301f370dc03c4372b069af30bac3db4d",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 用户需在故障次月内申请。\n2. 计划维护时间不计入故障时长。\n3. 不可抗力造成的停机不承担责任。",
+          "scores": {
+            "fused": 0.03076923,
+            "vector_similarity": 0.584249,
+            "vector_rank": 5,
+            "keyword": 60.339434,
+            "keyword_rank": 5
+          }
+        },
+        {
+          "chunk_id": "chk_cb5b309ae151d4f05af1a1d461d36a7e2dc88b9d",
+          "evidence_span_id": "span_789cf3dad84648b5b94d539986472bc9",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "### 维修时长",
+          "scores": {
+            "fused": 0.03041475,
+            "vector_similarity": 0.619352,
+            "vector_rank": 2,
+            "keyword": 55.209382,
+            "keyword_rank": 10
+          }
+        },
+        {
+          "chunk_id": "chk_e8b0e063d357cd6d646a32d2efd681be6ce45647",
+          "evidence_span_id": "span_ce96f0e631e94fb0bb3389e4c6a3f9c7",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 人为损坏：摔落、进水、私自拆解。\n2. 自然磨损：外壳磨损、按键老化。\n3. 非官方维修：在非授权维修点维修过。\n4. 超期：超过保修期限。\n5. 改装：安装非官方配件或系统。",
+          "scores": {
+            "fused": 0.03011775,
+            "vector_similarity": 0.573003,
+            "vector_rank": 9,
+            "keyword": 60.551905,
+            "keyword_rank": 4
+          }
+        }
+      ]
+    },
+    {
+      "example": "warranty-service",
+      "id": "warranty-dev-4",
+      "question": "延保服务需要在什么时候购买？",
+      "expected_terms": [
+        "原保修期到期前购买",
+        "延保须在"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 2,
+      "vector_baseline_hit_rank": 2,
+      "top_k": [
+        {
+          "chunk_id": "chk_e041520103bcc43cf863e594a36e193d514d6b29",
+          "evidence_span_id": "span_e548c431da2e4beda987730995b0a4b2",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "### 延保服务",
+          "scores": {
+            "fused": 0.03252247,
+            "vector_similarity": 0.808634,
+            "vector_rank": 1,
+            "keyword": 46.237408,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_2f43ccf91b3411a787971b38f31a6a4a94ff4b7b",
+          "evidence_span_id": "span_cd77b432b267401e8044bedaea569f23",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 延保 1 年：购机时加购，价格为原价 10%。\n2. 延保 2 年：购机时加购，价格为原价 15%。\n3. 延保须在原保修期到期前购买。",
+          "scores": {
+            "fused": 0.03252247,
+            "vector_similarity": 0.741386,
+            "vector_rank": 2,
+            "keyword": 53.260144,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_fd26b3ffce0b63474f394d6601f001b35dc09332",
+          "evidence_span_id": "span_9c7574846a5443c3876ae6aa206eeaf5",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 标准服务：99.9% 月度可用性。\n2. 高级服务：99.95% 月度可用性。\n3. 计算方式：（总时长 - 故障时长）/ 总时长。",
+          "scores": {
+            "fused": 0.03036577,
+            "vector_similarity": 0.534632,
+            "vector_rank": 9,
+            "keyword": 33.363562,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_0a4e41067f64b3292b5f16158aa692b5ed218197",
+          "evidence_span_id": "span_13ecba934d46433a9fd0419ee3be0d6e",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "> 本文档为自建演示材料，用于验证“有据工作台”的时间计算、排除条款与阈值核对流程。\n> 不是任何厂商的真实保修政策，不代表实际合同条款。",
+          "scores": {
+            "fused": 0.0298574,
+            "vector_similarity": 0.54413,
+            "vector_rank": 8,
+            "keyword": 29.829938,
+            "keyword_rank": 6
+          }
+        },
+        {
+          "chunk_id": "chk_3f5057a45acb14ae2ae24901252e832c90f0bc5f",
+          "evidence_span_id": "span_301f370dc03c4372b069af30bac3db4d",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 用户需在故障次月内申请。\n2. 计划维护时间不计入故障时长。\n3. 不可抗力造成的停机不承担责任。",
+          "scores": {
+            "fused": 0.02985075,
+            "vector_similarity": 0.571428,
+            "vector_rank": 7,
+            "keyword": 29.673738,
+            "keyword_rank": 7
+          }
+        }
+      ]
+    },
+    {
+      "example": "warranty-service",
+      "id": "warranty-dev-5",
+      "question": "非工作日报修，多久会响应？",
+      "expected_terms": [
+        "非工作日",
+        "48 小时"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 1,
+      "vector_baseline_hit_rank": 1,
+      "top_k": [
+        {
+          "chunk_id": "chk_53c2921007ddf109cdfb5b71b99a3dc54657d0fa",
+          "evidence_span_id": "span_b3f7acf351c142cb82e1ab3226ee14bb",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 工作日：24 小时内响应。\n2. 非工作日：48 小时内响应。\n3. 紧急问题：4 小时内响应，仅限企业客户。",
+          "scores": {
+            "fused": 0.03278689,
+            "vector_similarity": 0.717753,
+            "vector_rank": 1,
+            "keyword": 64.183237,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_c51b2d0abbf0f67c1f10fddf55222149ac974232",
+          "evidence_span_id": "span_7fba90cc520a4a8f943281f0047293b4",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 简单问题：3 个工作日内完成。\n2. 复杂问题：7 个工作日内完成。\n3. 缺货情况：等待配件，最长 30 天。",
+          "scores": {
+            "fused": 0.03200205,
+            "vector_similarity": 0.702618,
+            "vector_rank": 3,
+            "keyword": 46.925652,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_aab18bdb70fb9385baebb3545a61c96422edd4d9",
+          "evidence_span_id": "span_1378b372a1d142fb9c1f21e71dbb2b6a",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "### 响应时间",
+          "scores": {
+            "fused": 0.03149802,
+            "vector_similarity": 0.698492,
+            "vector_rank": 4,
+            "keyword": 44.996345,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_cb5b309ae151d4f05af1a1d461d36a7e2dc88b9d",
+          "evidence_span_id": "span_789cf3dad84648b5b94d539986472bc9",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "### 维修时长",
+          "scores": {
+            "fused": 0.03062179,
+            "vector_similarity": 0.706852,
+            "vector_rank": 2,
+            "keyword": 33.344016,
+            "keyword_rank": 9
+          }
+        },
+        {
+          "chunk_id": "chk_7b8f97be52cb3468e320aa5792fc83e525f5d9a2",
+          "evidence_span_id": "span_8aad58d26e2e4b35a727814dd3bc6df8",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 报修：电话或在线提交工单。\n2. 诊断：远程诊断或送修检测。\n3. 报价：超出保修范围的维修先报价。\n4. 维修：用户确认后维修。\n5. 交付：维修完成通知取机。",
+          "scores": {
+            "fused": 0.03055037,
+            "vector_similarity": 0.601894,
+            "vector_rank": 7,
+            "keyword": 42.212313,
+            "keyword_rank": 4
+          }
+        }
+      ]
+    },
+    {
+      "example": "warranty-service",
+      "id": "warranty-dev-6",
+      "question": "服务可用性低于 99.5% 时，补偿标准是多少？",
+      "expected_terms": [
+        "99.5%",
+        "25% 月费"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 1,
+      "vector_baseline_hit_rank": 1,
+      "top_k": [
+        {
+          "chunk_id": "chk_a3934be5448b02a2858a034eb47f2cdb577b5eed",
+          "evidence_span_id": "span_25e89be4d36f47d9ad7b1dd064d1e0ff",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "| 月度可用性 | 补偿 |\n| --- | --- |\n| 低于 99.9% | 补偿 10% 月费 |\n| 低于 99.5% | 补偿 25% 月费 |\n| 低于 99.0% | 补偿 50% 月费 |",
+          "scores": {
+            "fused": 0.03278689,
+            "vector_similarity": 0.714301,
+            "vector_rank": 1,
+            "keyword": 88.424334,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_32ce8d65d6cf285af206a387285bcfe3857e5796",
+          "evidence_span_id": "span_98754742fc534c0183f6c48b19bc8830",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "### 补偿标准",
+          "scores": {
+            "fused": 0.03200205,
+            "vector_similarity": 0.69009,
+            "vector_rank": 2,
+            "keyword": 65.638626,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_fd26b3ffce0b63474f394d6601f001b35dc09332",
+          "evidence_span_id": "span_9c7574846a5443c3876ae6aa206eeaf5",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 标准服务：99.9% 月度可用性。\n2. 高级服务：99.95% 月度可用性。\n3. 计算方式：（总时长 - 故障时长）/ 总时长。",
+          "scores": {
+            "fused": 0.03200205,
+            "vector_similarity": 0.682588,
+            "vector_rank": 3,
+            "keyword": 68.02398,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_af6a5943e4b13048db9502d509751074855edd37",
+          "evidence_span_id": "span_74e04a99593947c489fa169d462450d8",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "### 补偿条件",
+          "scores": {
+            "fused": 0.03100962,
+            "vector_similarity": 0.643107,
+            "vector_rank": 4,
+            "keyword": 51.264731,
+            "keyword_rank": 5
+          }
+        },
+        {
+          "chunk_id": "chk_c4dc12458e3a74d430e778f412fbd38285a45e9b",
+          "evidence_span_id": "span_fe2d53e03d4146c88a5c304b2674e055",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "### 可用性保证",
+          "scores": {
+            "fused": 0.03100962,
+            "vector_similarity": 0.631369,
+            "vector_rank": 5,
+            "keyword": 57.133012,
+            "keyword_rank": 4
+          }
+        }
+      ]
+    },
+    {
+      "example": "warranty-service",
+      "id": "warranty-dev-7",
+      "question": "维修前需要做什么准备？",
+      "expected_terms": [
+        "自行备份数据",
+        "备份"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 2,
+      "vector_baseline_hit_rank": 4,
+      "top_k": [
+        {
+          "chunk_id": "chk_674cdf3a4b8b29146248c211a1cccca5e8925086",
+          "evidence_span_id": "span_b147f80d259d497faf046a44b101044c",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "## 三、维修流程",
+          "scores": {
+            "fused": 0.03201844,
+            "vector_similarity": 0.728712,
+            "vector_rank": 1,
+            "keyword": 20.781775,
+            "keyword_rank": 4
+          }
+        },
+        {
+          "chunk_id": "chk_7c191192723be83be1654b3a9b088845cdb7b54a",
+          "evidence_span_id": "span_fcdd94479691485fbce95b17da6ce76f",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 维修前用户需自行备份数据。\n2. 维修过程中可能导致数据丢失，服务商不承担数据恢复责任。\n3. 维修人员对设备信息保密，不得未经授权访问用户数据。\n4. 争议优先协商；协商不成提交仲裁，适用中华人民共和国法律。",
+          "scores": {
+            "fused": 0.03201844,
+            "vector_similarity": 0.596957,
+            "vector_rank": 4,
+            "keyword": 24.931841,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_cb5b309ae151d4f05af1a1d461d36a7e2dc88b9d",
+          "evidence_span_id": "span_789cf3dad84648b5b94d539986472bc9",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "### 维修时长",
+          "scores": {
+            "fused": 0.03200205,
+            "vector_similarity": 0.653788,
+            "vector_rank": 2,
+            "keyword": 20.852296,
+            "keyword_rank": 3
+          }
+        },
+        {
+          "chunk_id": "chk_7b8f97be52cb3468e320aa5792fc83e525f5d9a2",
+          "evidence_span_id": "span_8aad58d26e2e4b35a727814dd3bc6df8",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 报修：电话或在线提交工单。\n2. 诊断：远程诊断或送修检测。\n3. 报价：超出保修范围的维修先报价。\n4. 维修：用户确认后维修。\n5. 交付：维修完成通知取机。",
+          "scores": {
+            "fused": 0.03200205,
+            "vector_similarity": 0.614049,
+            "vector_rank": 3,
+            "keyword": 21.027712,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_c51b2d0abbf0f67c1f10fddf55222149ac974232",
+          "evidence_span_id": "span_7fba90cc520a4a8f943281f0047293b4",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 简单问题：3 个工作日内完成。\n2. 复杂问题：7 个工作日内完成。\n3. 缺货情况：等待配件，最长 30 天。",
+          "scores": {
+            "fused": 0.02987737,
+            "vector_similarity": 0.588708,
+            "vector_rank": 5,
+            "keyword": 18.310407,
+            "keyword_rank": 9
+          }
+        }
+      ]
+    },
+    {
+      "example": "warranty-service",
+      "id": "warranty-dev-8",
+      "question": "我的设备买了 10 个月，屏幕出现竖线（非外力），是否免费保修？",
+      "expected_terms": [
+        "屏幕",
+        "1 年，不含外力损坏"
+      ],
+      "status": "ok",
+      "empty_reason": null,
+      "fused_hit_rank": 2,
+      "vector_baseline_hit_rank": 3,
+      "top_k": [
+        {
+          "chunk_id": "chk_af9bc409799be6428660ce4a4f92cca632413a76",
+          "evidence_span_id": "span_f881cb920f1a41f48f0e029e97013385",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 硬件故障：制造缺陷导致的故障。\n2. 软件问题：出厂预装软件的故障。\n3. 配件：原装电源适配器、数据线。\n4. 保修期内免费维修或更换。",
+          "scores": {
+            "fused": 0.03252247,
+            "vector_similarity": 0.673588,
+            "vector_rank": 1,
+            "keyword": 70.040654,
+            "keyword_rank": 2
+          }
+        },
+        {
+          "chunk_id": "chk_b6016bf3265d88b6b4342de8ffd563f5d0ae7aa9",
+          "evidence_span_id": "span_e8065e11a60e4f548049c266ee2bc3d9",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "| 部件 | 保修期 |\n| --- | --- |\n| 主机 | 1 年 |\n| 电池 | 6 个月或充电 300 次，以先到者为准 |\n| 屏幕 | 1 年，不含外力损坏 |\n| 配件 | 3 个月 |",
+          "scores": {
+            "fused": 0.03226646,
+            "vector_similarity": 0.641487,
+            "vector_rank": 3,
+            "keyword": 86.876718,
+            "keyword_rank": 1
+          }
+        },
+        {
+          "chunk_id": "chk_e8b0e063d357cd6d646a32d2efd681be6ce45647",
+          "evidence_span_id": "span_ce96f0e631e94fb0bb3389e4c6a3f9c7",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 人为损坏：摔落、进水、私自拆解。\n2. 自然磨损：外壳磨损、按键老化。\n3. 非官方维修：在非授权维修点维修过。\n4. 超期：超过保修期限。\n5. 改装：安装非官方配件或系统。",
+          "scores": {
+            "fused": 0.03151365,
+            "vector_similarity": 0.641543,
+            "vector_rank": 2,
+            "keyword": 64.891223,
+            "keyword_rank": 5
+          }
+        },
+        {
+          "chunk_id": "chk_2f43ccf91b3411a787971b38f31a6a4a94ff4b7b",
+          "evidence_span_id": "span_cd77b432b267401e8044bedaea569f23",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "1. 延保 1 年：购机时加购，价格为原价 10%。\n2. 延保 2 年：购机时加购，价格为原价 15%。\n3. 延保须在原保修期到期前购买。",
+          "scores": {
+            "fused": 0.02964427,
+            "vector_similarity": 0.59099,
+            "vector_rank": 9,
+            "keyword": 64.421993,
+            "keyword_rank": 6
+          }
+        },
+        {
+          "chunk_id": "chk_36d1c38704d97aa0e1bcf5551cbaa1f8dec9dd53",
+          "evidence_span_id": "span_d63fdb3c10104b009bd0e0c90d4c0dd4",
+          "source_label": "评测-warranty-service / 演示规则_设备保修.txt",
+          "page": 1,
+          "text": "### 保修覆盖",
+          "scores": {
+            "fused": 0.0292735,
+            "vector_similarity": 0.613934,
+            "vector_rank": 5,
+            "keyword": 61.10925,
+            "keyword_rank": 12
+          }
+        }
+      ]
+    }
+  ]
+}

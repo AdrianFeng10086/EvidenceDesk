@@ -107,7 +107,7 @@ npm run dev
 
 ## 项目状态
 
-**当前版本**：v0.3.1-dev (Day 1–4 修补)
+**当前版本**：v0.4.0-dev (Day 5 检索链路)
 
 **完成进度**：
 
@@ -116,7 +116,7 @@ npm run dev
 - [X] Day 3: 文档导入、不可变版本与证据片段解析
 - [X] Day 4: PDF.js 精确高亮定位与页级兜底
 - [X] Day 1–4 修补: Case 范围模型、文档软删除/恢复、来源墓碑、回收站与删除影响提示
-- [ ] Day 5: 检索链路
+- [X] Day 5: Case 级分块、Chroma 索引、向量 + 中文 BM25 混合检索、检索日志与空结果原因
 - [ ] Day 6: 带证据回答
 - [ ] Day 7: 引用校验
 - [ ] Day 8: 条件核对与补问
@@ -138,6 +138,7 @@ npm run dev
 - [Day 2 实现说明](docs/day2-implementation.md)
 - [Day 3 实现说明](docs/day3-implementation.md)
 - [Day 4 实现说明](docs/day4-implementation.md)
+- [Day 5 实现说明：分块、索引与混合检索](docs/day5-implementation.md)
 - [API 规范](docs/api-spec.md)
 - [开发进度](docs/progress.md)
 
@@ -165,6 +166,8 @@ npm run dev
 - PDF/TXT/Markdown 解析适配、EvidenceSpan 与文字框映射
 - 证据卡、原文阅读器、精确高亮、页级兜底与定位状态
 - 资料空间、任务范围、软删除与来源墓碑的数据模型
+- 分块（章节上下文）、稳定 chunk/span 映射、索引版本指纹与重建
+- Case 级范围过滤、向量 + 中文 BM25 + RRF 融合、空结果原因与检索日志
 
 **第三方依赖**：
 

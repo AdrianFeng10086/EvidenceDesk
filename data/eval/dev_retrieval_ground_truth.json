@@ -1,0 +1,147 @@
+{
+  "version": "day5-dev-v1",
+  "note": "开发集召回评测的期望词项。命中定义为 Top-K 结果文本包含任一期望词项（忽略空白）。保留集 eval-questions 不参与调参。",
+  "examples": {
+    "expense-reimbursement": {
+      "documents": [
+        "data/examples/expense-reimbursement/documents/演示规则_费用报销.txt"
+      ],
+      "questions": [
+        {
+          "id": "expense-dev-1",
+          "question": "员工手机话费补贴的上限是多少？",
+          "expected_terms": ["每月手机补贴上限", "手机补贴上限"]
+        },
+        {
+          "id": "expense-dev-2",
+          "question": "出差住宿费的报销标准是什么？",
+          "expected_terms": ["住宿费", "每晚不超过"]
+        },
+        {
+          "id": "expense-dev-3",
+          "question": "2000 元的办公用品采购需要谁审批？",
+          "expected_terms": ["2000 元以上", "财务总监"]
+        },
+        {
+          "id": "expense-dev-4",
+          "question": "交通违章罚款可以报销吗？",
+          "expected_terms": ["交通违章罚款"]
+        },
+        {
+          "id": "expense-dev-5",
+          "question": "电子发票可以用于报销吗？",
+          "expected_terms": ["电子发票", "同等效力"]
+        },
+        {
+          "id": "expense-dev-6",
+          "question": "业务招待费需要事前审批吗？",
+          "expected_terms": ["业务招待费", "事前审批"]
+        },
+        {
+          "id": "expense-dev-7",
+          "question": "发票需要在费用发生后多久内提交？",
+          "expected_terms": ["30 天内提交", "发票时间"]
+        },
+        {
+          "id": "expense-dev-8",
+          "question": "我是普通员工，出差 3 天住宿花费 1200 元，每晚 400 元，是否符合标准？",
+          "expected_terms": ["普通员工", "每晚不超过 400 元"]
+        }
+      ]
+    },
+    "project-application": {
+      "documents": [
+        "data/examples/project-application/documents/演示规则_项目申报.txt"
+      ],
+      "questions": [
+        {
+          "id": "project-dev-1",
+          "question": "项目申报的截止时间是什么时候？",
+          "expected_terms": ["申报截止时间", "11 月 15 日"]
+        },
+        {
+          "id": "project-dev-2",
+          "question": "申请人需要满足哪些职称要求？",
+          "expected_terms": ["副教授及以上职称"]
+        },
+        {
+          "id": "project-dev-3",
+          "question": "重点项目对申请人的前期项目有什么要求？",
+          "expected_terms": ["省级及以上科研项目", "近 3 年主持"]
+        },
+        {
+          "id": "project-dev-4",
+          "question": "同一人同一年度可以主持几项重点项目？",
+          "expected_terms": ["只能主持 1 项重点项目", "同一人同一年度"]
+        },
+        {
+          "id": "project-dev-5",
+          "question": "校内预审和上级报送的时间分别是什么？",
+          "expected_terms": ["校内预审时间", "上级报送时间"]
+        },
+        {
+          "id": "project-dev-6",
+          "question": "申报需要提交哪些材料？",
+          "expected_terms": ["项目申请书", "前期研究成果证明", "个人简历"]
+        },
+        {
+          "id": "project-dev-7",
+          "question": "什么情况下不能申报项目？",
+          "expected_terms": ["不得申报", "违规记录", "未结题"]
+        },
+        {
+          "id": "project-dev-8",
+          "question": "我是副教授，有 2023 年省社科项目在研，是否可以申报 2024 年重点项目？",
+          "expected_terms": ["在研项目且未结题", "副教授及以上职称", "不得申报新的重点项目"]
+        }
+      ]
+    },
+    "warranty-service": {
+      "documents": [
+        "data/examples/warranty-service/documents/演示规则_设备保修.txt"
+      ],
+      "questions": [
+        {
+          "id": "warranty-dev-1",
+          "question": "设备主机的保修期是多久？",
+          "expected_terms": ["主机", "1 年"]
+        },
+        {
+          "id": "warranty-dev-2",
+          "question": "电池充电 350 次后出现问题，是否在保修范围内？",
+          "expected_terms": ["电池", "300 次", "6 个月"]
+        },
+        {
+          "id": "warranty-dev-3",
+          "question": "设备进水导致故障可以免费维修吗？",
+          "expected_terms": ["人为损坏", "进水"]
+        },
+        {
+          "id": "warranty-dev-4",
+          "question": "延保服务需要在什么时候购买？",
+          "expected_terms": ["原保修期到期前购买", "延保须在"]
+        },
+        {
+          "id": "warranty-dev-5",
+          "question": "非工作日报修，多久会响应？",
+          "expected_terms": ["非工作日", "48 小时"]
+        },
+        {
+          "id": "warranty-dev-6",
+          "question": "服务可用性低于 99.5% 时，补偿标准是多少？",
+          "expected_terms": ["99.5%", "25% 月费"]
+        },
+        {
+          "id": "warranty-dev-7",
+          "question": "维修前需要做什么准备？",
+          "expected_terms": ["自行备份数据", "备份"]
+        },
+        {
+          "id": "warranty-dev-8",
+          "question": "我的设备买了 10 个月，屏幕出现竖线（非外力），是否免费保修？",
+          "expected_terms": ["屏幕", "1 年，不含外力损坏"]
+        }
+      ]
+    }
+  }
+}

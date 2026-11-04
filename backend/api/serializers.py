@@ -73,6 +73,13 @@ def version_out(version: DocumentVersion) -> DocumentVersionOut:
         page_count=version.page_count,
         char_count=version.char_count,
         parsed_at=version.parsed_at,
+        index_status=version.index_status or "pending",
+        index_error_code=version.index_error_code,
+        index_error=version.index_error,
+        index_version=version.index_version,
+        embedding_model=version.embedding_model,
+        chunk_count=version.chunk_count,
+        indexed_at=version.indexed_at,
     )
 
 

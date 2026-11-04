@@ -100,6 +100,13 @@ class DocumentVersionOut(BaseModel):
     page_count: Optional[int] = None
     char_count: Optional[int] = None
     parsed_at: Optional[datetime] = None
+    index_status: str = "pending"
+    index_error_code: Optional[str] = None
+    index_error: Optional[str] = None
+    index_version: Optional[str] = None
+    embedding_model: Optional[str] = None
+    chunk_count: Optional[int] = None
+    indexed_at: Optional[datetime] = None
 
 
 class DocumentSummaryOut(BaseModel):

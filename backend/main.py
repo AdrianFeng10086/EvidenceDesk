@@ -4,18 +4,20 @@
 Day 1: 基础结构和健康检查
 Day 2: 流式对话
 Day 3: 文档导入、不可变版本、解析状态与 EvidenceSpan
+Day 5: 分块、Chroma 索引、Case 级混合检索与检索日志
 """
 
-from contextlib import asynccontextmanager
 import os
 import sys
+import threading
+from contextlib import asynccontextmanager
 
+import uvicorn
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import uvicorn
-from dotenv import load_dotenv
 
 for _stream in (sys.stdout, sys.stderr):
     if hasattr(_stream, "reconfigure"):
@@ -46,6 +48,26 @@ async def lifespan(app: FastAPI):
     interrupted = recover_interrupted_parses()
     if interrupted:
         print(f"⚠️  {len(interrupted)} 个解析任务因上次退出而中断，已标记为失败")
+
+    if os.getenv("INDEX_BACKFILL_ON_STARTUP", "true").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
+        def _backfill() -> None:
+            from services.indexing import backfill_pending_indexes
+
+            try:
+                count = backfill_pending_indexes()
+                if count:
+                    print(f"🧩 已补齐 {count} 个文档版本的检索索引")
+            except Exception as exc:  # noqa: BLE001 — 后台补齐失败不阻断启动
+                print(f"⚠️  启动索引补齐失败：{exc}")
+
+        threading.Thread(
+            target=_backfill, name="index-backfill", daemon=True
+        ).start()
 
     yield
 
@@ -119,10 +141,11 @@ async def root():
     }
 
 
-from api.routes import chat, documents, workspaces  # noqa: E402
+from api.routes import cases, chat, documents, workspaces  # noqa: E402
 
 app.include_router(workspaces.router, prefix="/api", tags=["资料空间"])
 app.include_router(documents.router, prefix="/api", tags=["文档"])
+app.include_router(cases.router, prefix="/api", tags=["事项与检索"])
 app.include_router(chat.router, prefix="/api/chat", tags=["对话"])
 
 

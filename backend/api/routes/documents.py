@@ -63,6 +63,11 @@ from services.access import (
 )
 from services.errors import ConflictError, NotFoundError
 from services.evidence_search import search_workspace_evidence
+from services.indexing import (
+    remove_version_index,
+    reset_version_index,
+    run_index_job,
+)
 from services.parser import run_parse_job
 from services.storage import (
     assert_managed_path,
@@ -197,8 +202,21 @@ async def upload_document(
                 else:
                     remove_staged(saved)
                 _restore_document(db, duplicate_document)
+                restore_versions = list(
+                    db.scalars(
+                        select(DocumentVersion).where(
+                            DocumentVersion.document_id == duplicate_document.id
+                        )
+                    ).all()
+                )
+                for restore_version in restore_versions:
+                    restore_version.index_status = "pending"
+                    restore_version.index_error_code = None
+                    restore_version.index_error = None
                 db.commit()
                 committed = True
+                for restore_version in restore_versions:
+                    background_tasks.add_task(run_index_job, restore_version.id)
             else:
                 remove_staged(saved)
             response.status_code = 200
@@ -459,6 +477,8 @@ def delete_document(
     document.updated_at = utcnow()
 
     for version in versions:
+        # 删除后立即从向量索引与候选块中移除；历史日志由 Tombstone 标注
+        remove_version_index(db, version, commit=False)
         existing = db.scalars(
             select(SourceTombstone).where(
                 SourceTombstone.document_version_id == version.id
@@ -492,6 +512,7 @@ def delete_document(
 def restore_document(
     workspace_id: str,
     document_id: str,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     principal: Principal = Depends(get_principal),
 ) -> DocumentSummaryOut:
@@ -515,8 +536,12 @@ def restore_document(
         )
 
     _restore_document(db, document)
+    for version in versions:
+        reset_version_index(db, version, commit=False)
     db.commit()
     db.refresh(document)
+    for version in versions:
+        background_tasks.add_task(run_index_job, version.id)
     return document_summary(db, document)
 
 
@@ -628,6 +653,7 @@ def retry_parse(
     previous = latest_job(db, version)
     attempt = (previous.attempt + 1) if previous else 1
 
+    reset_version_index(db, version, commit=False)
     version.parse_status = "uploaded"
     version.support_level = "pending"
     version.parse_error_code = None
